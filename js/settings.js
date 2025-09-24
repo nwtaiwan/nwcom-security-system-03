@@ -2,6 +2,7 @@ import { db } from './firebase.js';
 import { doc, onSnapshot, setDoc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { showCustomAlert, showCustomConfirm, showLoader, hideLoader } from './utils.js';
 
+// This variable will be exported to be used by other modules (like users.js and community.js)
 let systemSettings = { roles: [], jobTitles: [], certifications: [], areas: [] };
 
 const settingsConfig = {
@@ -11,10 +12,12 @@ const settingsConfig = {
     areas: { listElId: 'areas-list', addBtnId: 'add-area-btn', name: '區域' }
 };
 
+// This function renders the lists based on the current state of the systemSettings variable.
 function renderAllSettingsLists() {
     Object.keys(settingsConfig).forEach(category => {
         const config = settingsConfig[category];
         const listEl = document.getElementById(config.listElId);
+        // Only render if the element exists on the current page
         if (!listEl) return;
 
         const items = systemSettings[category] || [];
@@ -34,7 +37,7 @@ function renderAllSettingsLists() {
     });
 }
 
-
+// This listener runs in the background, keeping the systemSettings variable up-to-date.
 function listenToSystemSettings() {
     const settingsRef = doc(db, "system_settings", "account_config");
     return onSnapshot(settingsRef, 
@@ -42,6 +45,7 @@ function listenToSystemSettings() {
             if (docSnap.exists()) {
                 systemSettings = docSnap.data();
             } else {
+                // If the settings document doesn't exist, create it with default values.
                 const defaultSettings = {
                     roles: ['系統管理員', '高階主管', '初階主管', '勤務人員'],
                     jobTitles: ['日班保全', '日機保全', '夜班保全', '夜機保全', '行政祕書', '財務秘書', '吧檯秘書', '總幹事', '副總幹事', '督導', '課長', '襄理', '經理', '處長', '協理', '特助'],
@@ -56,14 +60,13 @@ function listenToSystemSettings() {
                     showCustomAlert("建立預設系統設定失敗。");
                 }
             }
-            // These functions are now called from their respective page initializers
-            // to ensure DOM is ready.
-            if(document.getElementById('roles-list')) { // Check if settings page is active
-                 renderAllSettingsLists();
-            }
-             if(document.getElementById('filter-job-title')) { // Check if user page is active
-                // This will be handled by a function exported to users.js
-            }
+            // After updating settings, re-render any visible settings list.
+            renderAllSettingsLists();
+            // Also re-populate dropdowns on other pages if they are visible.
+            // (This requires exporting the functions or making them globally accessible)
+            if (typeof window.populateFilterDropdowns === 'function') window.populateFilterDropdowns();
+            if (typeof window.populateCommunityFilterDropdowns === 'function') window.populateCommunityFilterDropdowns();
+
         },
         (error) => {
              console.error("Firestore Permission Denied in listenToSystemSettings:", error);
@@ -72,11 +75,12 @@ function listenToSystemSettings() {
     );
 }
 
+// This function is called ONLY when the settings page is loaded by the router.
 function initSettingsPage() {
-    // Initial render
+    // 1. Initial render using the latest data in systemSettings.
     renderAllSettingsLists();
 
-    // Event Listeners
+    // 2. Set up event listeners for all buttons and lists on the page.
     Object.entries(settingsConfig).forEach(([category, config]) => {
         const addBtn = document.getElementById(config.addBtnId);
         const listEl = document.getElementById(config.listElId);
@@ -124,7 +128,7 @@ function initSettingsPage() {
         }
     });
     
-    // Sub tab logic
+    // 3. Set up sub-tab logic
     const subTabAccountSettingsBtn = document.getElementById('sub-tab-account-settings');
     const subTabCommunitySettingsBtn = document.getElementById('sub-tab-community-settings');
     const accountSettingsContent = document.getElementById('account-settings-content');
@@ -146,7 +150,11 @@ function initSettingsPage() {
     }
     subTabAccountSettingsBtn.addEventListener('click', () => switchSettingsTab('account'));
     subTabCommunitySettingsBtn.addEventListener('click', () => switchSettingsTab('community'));
-    switchSettingsTab('account'); // Default view
+    
+    // Default to the account settings tab
+    switchSettingsTab('account');
 }
 
 export { initSettingsPage, listenToSystemSettings, systemSettings };
+
+
