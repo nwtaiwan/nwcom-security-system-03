@@ -1,0 +1,61 @@
+<header class="flex justify-between items-center mb-6 pb-4 border-b">
+     <div class="flex items-center">
+        <button class="menu-toggle-btn md:hidden mr-4 p-2 text-gray-600 hover:text-gray-900">
+             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+        </button>
+        <h1 class="text-xl font-bold text-gray-800">系統設定</h1>
+     </div>
+</header>
+
+<!-- Sub Tabs -->
+<div class="mb-6 border-b border-gray-200">
+    <nav class="flex space-x-4" aria-label="Tabs">
+        <button id="sub-tab-account-settings" class="sub-tab-button active shrink-0 px-4 py-2 text-sm font-medium text-gray-500 rounded-t-lg border-b-2 border-transparent hover:text-gray-700 hover:border-gray-300">帳號設定</button>
+        <button id="sub-tab-community-settings" class="sub-tab-button shrink-0 px-4 py-2 text-sm font-medium text-gray-500 rounded-t-lg border-b-2 border-transparent hover:text-gray-700 hover:border-gray-300">社區設定</button>
+    </nav>
+</div>
+
+<!-- Account Settings Content -->
+<div id="account-settings-content">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Roles -->
+        <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+            <div class="flex justify-between items-center mb-3">
+                <h4 class="font-semibold text-gray-700">角色</h4>
+                <button id="add-role-btn" class="bg-green-500 text-white px-2 py-1 text-xs rounded hover:bg-green-600">新增</button>
+            </div>
+            <ul id="roles-list" class="space-y-2 max-h-60 overflow-y-auto"></ul>
+        </div>
+        <!-- Job Titles -->
+        <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+            <div class="flex justify-between items-center mb-3">
+                <h4 class="font-semibold text-gray-700">職稱</h4>
+                <button id="add-job-title-btn" class="bg-green-500 text-white px-2 py-1 text-xs rounded hover:bg-green-600">新增</button>
+            </div>
+            <ul id="job-titles-list" class="space-y-2 max-h-60 overflow-y-auto"></ul>
+        </div>
+        <!-- Certifications -->
+        <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+            <div class="flex justify-between items-center mb-3">
+                <h4 class="font-semibold text-gray-700">專業證照</h4>
+                <button id="add-certification-btn" class="bg-green-500 text-white px-2 py-1 text-xs rounded hover:bg-green-600">新增</button>
+            </div>
+            <ul id="certifications-list" class="space-y-2 max-h-60 overflow-y-auto"></ul>
+        </div>
+    </div>
+</div>
+
+<!-- Community Settings Content -->
+<div id="community-settings-content" class="hidden">
+     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Areas -->
+        <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+            <div class="flex justify-between items-center mb-3">
+                <h4 class="font-semibold text-gray-700">區域</h4>
+                <button id="add-area-btn" class="bg-green-500 text-white px-2 py-1 text-xs rounded hover:bg-green-600">新增</button>
+            </div>
+            <ul id="areas-list" class="space-y-2 max-h-60 overflow-y-auto"></ul>
+        </div>
+    </div>
+</div>
+
