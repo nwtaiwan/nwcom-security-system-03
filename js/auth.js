@@ -8,13 +8,14 @@ import { listenToSystemSettings } from "./settings.js";
 let currentUser = null;
 let unsubscribeSystemSettings = () => {};
 let unsubscribeSession = () => {};
+let pageUnsubscribers = []; // Centralized array for page listeners
 
-const roleMap = {
-    'system_admin': '系統管理員',
-    'senior_manager': '高階主管',
-    'junior_manager': '初階主管',
-    'staff': '勤務人員'
-};
+function clearPageListeners() {
+    if (pageUnsubscribers && pageUnsubscribers.length > 0) {
+        pageUnsubscribers.forEach(unsub => unsub());
+    }
+    pageUnsubscribers = [];
+}
 
 async function handleLogout() {
     showLoader();
@@ -40,9 +41,10 @@ async function handleLogout() {
 
 function handleAuthStateChange(router, closeSidebar) {
     onAuthStateChanged(auth, async (user) => {
-        // Stop listening to global listeners when auth state changes.
+        // Clear all listeners on any auth state change
         unsubscribeSystemSettings();
         unsubscribeSession();
+        clearPageListeners();
 
         const appContainer = document.getElementById('app');
         if (user && user.email) {
@@ -51,8 +53,13 @@ function handleAuthStateChange(router, closeSidebar) {
             
             if (userSnap.exists()) {
                 currentUser = { uid: user.uid, ...userSnap.data() };
+                const roleMap = {
+                    'system_admin': '系統管理員',
+                    'senior_manager': '高階主管',
+                    'junior_manager': '初階主管',
+                    'staff': '勤務人員'
+                };
 
-                // Start session listener for single-device enforcement
                 const localSessionId = localStorage.getItem('loginSessionId');
                 unsubscribeSession = onSnapshot(userRef, (userDoc) => {
                     if (userDoc.exists()) {
@@ -79,17 +86,20 @@ function handleAuthStateChange(router, closeSidebar) {
                 }
                 
                 document.querySelectorAll('.nav-btn').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        if (window.innerWidth < 768) {
+                    btn.addEventListener('click', async () => {
+                         if (window.innerWidth < 768) {
                             closeSidebar();
                         }
+                        // When a nav link is clicked, re-run the router to clear old listeners and set up new ones.
+                        clearPageListeners();
+                        pageUnsubscribers = await router();
                     });
                 });
                 
                 unsubscribeSystemSettings = listenToSystemSettings();
                 
-                // Just call the router. It will handle its own listeners.
-                await router();
+                // The router will now load the page and return its listeners
+                pageUnsubscribers = await router();
 
             } else {
                 await handleLogout();
@@ -104,3 +114,4 @@ function handleAuthStateChange(router, closeSidebar) {
 }
 
 export { handleAuthStateChange, currentUser };
+
