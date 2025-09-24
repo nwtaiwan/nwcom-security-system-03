@@ -3,13 +3,11 @@
  * 提供系統監控與管理功能
  */
 
-import { systemLogger } from './system-logger.js';
-import { systemNetwork } from './system-network.js';
-import { systemCache } from './system-cache.js';
-import { userDataManager } from './user-data-manager.js';
+import { SystemLogger, SystemCache, systemNetwork } from './system.js';
 import { notificationManager } from './notification.js';
-import { db } from './firebase-config.js';
-import { collection, query, orderBy, limit, onSnapshot, getDocs, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+import { userDataManager } from './dataManager.js';
+import { db } from './firebase.js';
+import { collection, query, orderBy, limit, onSnapshot, getDocs, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
 /**
  * 系統監控器
@@ -26,8 +24,14 @@ export class SystemMonitor {
             cpu: [],
             network: [],
             timestamps: []
-        };
+        }
         this.maxDataPoints = 20;
+        
+        this.logger = SystemLogger;
+        this.network = systemNetwork;
+        this.cache = new SystemCache();
+        this.userData = userDataManager;
+        this.notification = notificationManager;
         
         this.init();
     }
@@ -39,9 +43,20 @@ export class SystemMonitor {
             await this.loadInitialData();
             this.startMonitoring();
             
-            systemLogger.info('SystemMonitor initialized successfully');
+            this.logger.info('SystemMonitor initialized successfully');
         } catch (error) {
-            systemLogger.error('Failed to initialize SystemMonitor:', error);
+            this.logger.error('Failed to initialize SystemMonitor:', error);
+        }
+    }
+
+    async updateNetworkStatus() {
+        try {
+            const status = await this.network.checkConnectivity();
+            this.updateNetworkUI({ status: status ? 'online' : 'offline' });
+            this.addLog('info', '網路狀態更新成功', { status });
+        } catch (error) {
+            this.addLog('error', '網路狀態更新失敗', error);
+            this.updateNetworkUI({ status: 'error' });
         }
     }
     
@@ -184,7 +199,7 @@ export class SystemMonitor {
             this.userListener = null;
         }
         
-        systemLogger.info('System monitoring stopped');
+        this.logger.info('System monitoring stopped');
     }
     
     /**
@@ -208,14 +223,14 @@ export class SystemMonitor {
             await this.updatePerformanceData();
             
         } catch (error) {
-            systemLogger.error('Failed to load initial data:', error);
+            this.logger.error('Failed to load initial data:', error);
         }
     }
 
     async updateSystemStatus() {
         try {
             // 檢查網路連線
-            const isOnline = await systemNetwork.checkConnection();
+            const isOnline = await this.network.checkConnectivity();
             
             // 更新系統狀態顯示
             const statusElement = document.getElementById('system-status');
@@ -233,7 +248,9 @@ export class SystemMonitor {
 
             // 測試回應時間
             const startTime = Date.now();
-            await fetch('/api/health'); // 假設有健康檢查端點
+            if (isOnline) {
+                await this.network.fetchWithRetry('/favicon.ico');
+            }
             const responseTime = Date.now() - startTime;
             
             const responseTimeElement = document.getElementById('response-time');
@@ -247,7 +264,7 @@ export class SystemMonitor {
             }
 
         } catch (error) {
-            systemLogger.error('Failed to update system status:', error);
+            this.logger.error('Failed to update system status:', error);
             
             // 更新為錯誤狀態
             const statusElement = document.getElementById('system-status');
@@ -274,18 +291,18 @@ export class SystemMonitor {
             }
 
         } catch (error) {
-            systemLogger.error('Failed to update user statistics:', error);
+            this.logger.error('Failed to update user statistics:', error);
         }
     }
     
     async loadSystemLogs() {
         try {
             // 從本地儲存載入日誌
-            this.logs = systemLogger.getLogs() || [];
+            this.logs = this.logger.getLogs() || [];
             this.displayLogs();
             
             // 監聽新的日誌
-            systemLogger.onLogAdded = (log) => {
+            this.logger.onLogAdded = (log) => {
                 this.logs.unshift(log);
                 if (this.logs.length > 100) {
                     this.logs = this.logs.slice(0, 100);
@@ -294,7 +311,7 @@ export class SystemMonitor {
             };
 
         } catch (error) {
-            systemLogger.error('Failed to load system logs:', error);
+            this.logger.error('Failed to load system logs:', error);
         }
     }
 
@@ -340,7 +357,7 @@ export class SystemMonitor {
             this.displayActivities();
             
         } catch (error) {
-            systemLogger.error('Failed to load user activities:', error);
+            this.logger.error('Failed to load user activities:', error);
         }
     }
 
@@ -407,7 +424,7 @@ export class SystemMonitor {
             const activityDate = document.getElementById('activity-date')?.value || '';
             
             // 取得系統日誌
-            const logs = systemLogger.getLogs(logLevel || null, 100);
+            const logs = this.logger.getLogs(logLevel || null, 100);
             
             // 顯示日誌
             this.displayLogs(logs);
@@ -416,7 +433,7 @@ export class SystemMonitor {
             await this.displayActivityLogs(activityType, activityDate);
             
         } catch (error) {
-            systemLogger.error('Failed to load activity logs', error);
+            this.logger.error('Failed to load activity logs', error);
         }
     }
     
@@ -454,7 +471,7 @@ export class SystemMonitor {
             container.innerHTML = logHtml;
             
         } catch (error) {
-            systemLogger.error('Failed to display logs', error);
+            this.logger.error('Failed to display logs', error);
         }
     }
     
@@ -522,7 +539,7 @@ export class SystemMonitor {
             tbody.innerHTML = activityHtml;
             
         } catch (error) {
-            systemLogger.error('Failed to display activity logs', error);
+            this.logger.error('Failed to display activity logs', error);
         }
     }
     
@@ -559,7 +576,7 @@ export class SystemMonitor {
             this.updatePageLoadTimes();
             
         } catch (error) {
-            systemLogger.error('Failed to load performance metrics', error);
+            this.logger.error('Failed to load performance metrics', error);
         }
     }
     
@@ -575,7 +592,7 @@ export class SystemMonitor {
             this.updateNetworkLatency();
             
         } catch (error) {
-            systemLogger.error('Failed to update system metrics', error);
+            this.logger.error('Failed to update system metrics', error);
         }
     }
     
@@ -631,7 +648,7 @@ export class SystemMonitor {
             }
             
         } catch (error) {
-            systemLogger.error('Failed to update performance data:', error);
+            this.logger.error('Failed to update performance data:', error);
         }
     }
     
@@ -670,7 +687,7 @@ export class SystemMonitor {
             }
             
         } catch (error) {
-            systemLogger.error('Failed to update chart data', error);
+            this.logger.error('Failed to update chart data', error);
         }
     }
     
@@ -696,7 +713,7 @@ export class SystemMonitor {
             }
             
         } catch (error) {
-            systemLogger.error('Failed to update CPU usage', error);
+            this.logger.error('Failed to update CPU usage', error);
         }
     }
     
@@ -722,7 +739,7 @@ export class SystemMonitor {
             }
             
         } catch (error) {
-            systemLogger.error('Failed to update network latency', error);
+            this.logger.error('Failed to update network latency', error);
         }
     }
     
@@ -761,7 +778,7 @@ export class SystemMonitor {
             }
             
         } catch (error) {
-            systemLogger.error('Failed to update page load times', error);
+            this.logger.error('Failed to update page load times', error);
         }
     }
     
@@ -776,24 +793,62 @@ export class SystemMonitor {
             }, 30000); // 每30秒更新一次
             
         } catch (error) {
-            systemLogger.error('Failed to start activity monitoring', error);
+            this.logger.error('Failed to start activity monitoring', error);
         }
     }
     
+    /**
+     * 添加日誌
+     */
+    addLog(level, message, data = null) {
+        try {
+            this.logger.log(level, `[SystemMonitor] ${message}`, data);
+        } catch (error) {
+            console.error('Failed to add log:', error);
+        }
+    }
+
+    /**
+     * 更新網路狀態UI
+     */
+    updateNetworkUI(status) {
+        try {
+            const networkStatusElement = document.getElementById('network-status');
+            if (networkStatusElement) {
+                networkStatusElement.textContent = status.status === 'online' ? '正常' : '離線';
+                networkStatusElement.className = status.status === 'online' 
+                    ? 'text-2xl font-bold text-green-600' 
+                    : 'text-2xl font-bold text-red-600';
+            }
+
+            const networkLatencyElement = document.getElementById('network-latency');
+            if (networkLatencyElement && status.latency !== undefined) {
+                networkLatencyElement.textContent = `${status.latency}ms`;
+            }
+
+            const bandwidthElement = document.getElementById('bandwidth-usage');
+            if (bandwidthElement && status.bandwidth !== undefined) {
+                bandwidthElement.textContent = `${status.bandwidth} Mbps`;
+            }
+        } catch (error) {
+            this.logger.error('Failed to update network UI:', error);
+        }
+    }
+
     /**
      * 清除日誌
      */
     async clearLogs() {
         try {
             if (confirm('確定要清除所有系統日誌嗎？此操作無法復原。')) {
-                systemLogger.clearLogs();
+                this.logger.clearLogs();
                 this.logs = [];
                 this.displayLogs();
-                systemLogger.info('System logs cleared by user');
+                this.logger.info('System logs cleared by user');
                 notificationManager.success('系統日誌已清除');
             }
         } catch (error) {
-            systemLogger.error('Failed to clear logs:', error);
+            this.logger.error('Failed to clear logs:', error);
             notificationManager.error('清除日誌失敗');
         }
     }
@@ -803,11 +858,11 @@ export class SystemMonitor {
      */
     async clearCache() {
         try {
-            await systemCache.clearAll();
-            systemLogger.info('System cache cleared by user');
+            await this.cache.clearAll();
+            this.logger.info('System cache cleared by user');
             notificationManager.success('系統快取已清除');
         } catch (error) {
-            systemLogger.error('Failed to clear cache:', error);
+            this.logger.error('Failed to clear cache:', error);
             notificationManager.error('清除快取失敗');
         }
     }
@@ -823,14 +878,14 @@ export class SystemMonitor {
                 // 模擬重新啟動過程
                 await new Promise(resolve => setTimeout(resolve, 2000));
                 
-                systemLogger.info('Services restarted by user');
+                this.logger.info('Services restarted by user');
                 notificationManager.success('服務重新啟動完成');
                 
                 // 重新載入數據
                 await this.loadInitialData();
             }
         } catch (error) {
-            systemLogger.error('Failed to restart services:', error);
+            this.logger.error('Failed to restart services:', error);
             notificationManager.error('重新啟動服務失敗');
         }
     }
@@ -840,7 +895,7 @@ export class SystemMonitor {
      */
     async exportLogs() {
         try {
-            const logs = systemLogger.getLogs();
+            const logs = this.logger.getLogs();
             const logText = logs.map(log => {
                 const timestamp = new Date(log.timestamp).toLocaleString('zh-TW');
                 return `[${timestamp}] [${log.level.toUpperCase()}] ${log.message}${log.details ? ' ' + JSON.stringify(log.details) : ''}`;
@@ -856,11 +911,11 @@ export class SystemMonitor {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             
-            systemLogger.info('System logs exported by user');
+            this.logger.info('System logs exported by user');
             notificationManager.success('日誌匯出成功');
             
         } catch (error) {
-            systemLogger.error('Failed to export logs:', error);
+            this.logger.error('Failed to export logs:', error);
             notificationManager.error('匯出日誌失敗');
         }
     }
@@ -922,42 +977,19 @@ export class SystemMonitor {
                 notificationManager.warning('系統維護模式已啟用');
                 maintenanceButton.textContent = '停用維護模式';
                 maintenanceButton.className = 'px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700';
-                systemLogger.warn('Maintenance mode enabled by user');
+                this.logger.warn('Maintenance mode enabled by user');
             } else {
                 // 停用維護模式
                 notificationManager.success('系統維護模式已停用');
                 maintenanceButton.textContent = '啟用維護模式';
                 maintenanceButton.className = 'px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700';
-                systemLogger.info('Maintenance mode disabled by user');
+                this.logger.info('Maintenance mode disabled by user');
             }
             
         } catch (error) {
-            systemLogger.error('Failed to toggle maintenance mode:', error);
+            this.logger.error('Failed to toggle maintenance mode:', error);
             notificationManager.error('切換維護模式失敗');
         }
-    }
-}
-
-    /**
-     * 停止監控
-     */
-    stopMonitoring() {
-        this.isMonitoring = false;
-        
-        if (this.updateInterval) {
-            clearInterval(this.updateInterval);
-            this.updateInterval = null;
-        }
-        
-        // 銷毀圖表實例
-        Object.keys(this.charts).forEach(chartType => {
-            if (this.charts[chartType]) {
-                this.charts[chartType].destroy();
-                this.charts[chartType] = null;
-            }
-        });
-        
-        systemLogger.info('System monitoring stopped');
     }
 }
 
@@ -966,28 +998,21 @@ export class SystemMonitor {
  */
 export function initSystemMonitorPage() {
     try {
-        const monitor = new SystemMonitor();
-        monitor.init();
+        systemMonitor.init();
         
         // 返回監聽器以便清理
         return [
             {
                 element: window,
                 event: 'beforeunload',
-                handler: () => monitor.stopMonitoring()
+                handler: () => systemMonitor.stopMonitoring()
             }
         ];
         
     } catch (error) {
-        systemLogger.error('Failed to initialize system monitor page', error);
+        console.error('Failed to initialize system monitor page', error);
         return [];
     }
-}
-
-// 系統監控頁面初始化函數
-export function initSystemMonitorPage() {
-    systemMonitor.init();
-    return [];
 }
 
 // 匯出系統監控實例

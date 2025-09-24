@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系統監控測試</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2em;
+            font-weight: 300;
+        }
+        .content {
+            padding: 30px;
+        }
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .status-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            border-left: 4px solid #007bff;
+            transition: transform 0.2s ease;
+        }
+        .status-card:hover {
+            transform: translateY(-2px);
+        }
+        .status-card h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 1.1em;
+        }
+        .status-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #007bff;
+            margin: 10px 0;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-online { background-color: #28a745; }
+        .status-offline { background-color: #dc3545; }
+        .status-warning { background-color: #ffc107; }
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #0056b3;
+            transform: translateY(-1px);
+        }
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #1e7e34;
+            transform: translateY(-1px);
+        }
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-1px);
+        }
+        .log-section {
+            background: #2d3748;
+            border-radius: 8px;
+            padding: 20px;
+            color: #e2e8f0;
+        }
+        .log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .log-header h3 {
+            margin: 0;
+            color: #e2e8f0;
+        }
+        .log-container {
+            background: #1a202c;
+            border-radius: 6px;
+            padding: 15px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        .log-entry {
+            margin-bottom: 8px;
+            padding: 4px 0;
+            border-left: 3px solid #4a5568;
+            padding-left: 10px;
+        }
+        .log-info { border-left-color: #63b3ed; }
+        .log-success { border-left-color: #68d391; }
+        .log-warning { border-left-color: #fbb917; }
+        .log-error { border-left-color: #fc8181; }
+        .log-time {
+            color: #a0aec0;
+            font-size: 11px;
+        }
+        .log-message {
+            color: #e2e8f0;
+            margin-top: 2px;
+        }
+        .chart-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .chart-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #2d3748;
+        }
+        .chart-placeholder {
+            height: 200px;
+            background: linear-gradient(45deg, #f0f0f0 25%, transparent 25%), 
+                        linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), 
+                        linear-gradient(45deg, transparent 75%, #f0f0f0 75%), 
+                        linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 14px;
+        }
+        .network-status {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .network-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .network-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #28a745;
+            margin: 5px 0;
+        }
+        .error-message {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border-left: 4px solid #e53e3e;
+        }
+        .success-message {
+            background: #c6f6d5;
+            color: #22543d;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border-left: 4px solid #38a169;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🖥️ 系統監控中心</h1>
+            <p>西北保全勤務管理系統 - 系統狀態監控</p>
+        </div>
+        
+        <div class="content">
+            <!-- 系統狀態概覽 -->
+            <div class="status-grid">
+                <div class="status-card">
+                    <h3>系統狀態</h3>
+                    <div class="status-value">
+                        <span class="status-indicator status-offline" id="system-indicator"></span>
+                        <span id="system-status-text">離線</span>
+                    </div>
+                </div>
+                
+                <div class="status-card">
+                    <h3>網路狀態</h3>
+                    <div class="status-value" id="network-status-text">檢查中...</div>
+                </div>
+                
+                <div class="status-card">
+                    <h3>回應時間</h3>
+                    <div class="status-value" id="response-time-text">-- ms</div>
+                </div>
+                
+                <div class="status-card">
+                    <h3>線上人數</h3>
+                    <div class="status-value" id="online-users-text">0</div>
+                </div>
+            </div>
+
+            <!-- 控制按鈕 -->
+            <div class="controls">
+                <button class="btn btn-primary" onclick="testSystem()">🔍 測試系統</button>
+                <button class="btn btn-success" onclick="refreshData()">🔄 刷新數據</button>
+                <button class="btn btn-danger" onclick="clearLogs()">🗑️ 清除日誌</button>
+                <a href="index.html" class="btn btn-primary">🏠 返回主頁</a>
+            </div>
+
+            <!-- 網路監控 -->
+            <div class="chart-container">
+                <div class="chart-title">📡 網路監控</div>
+                <div class="network-status">
+                    <div class="network-card">
+                        <div>網路延遲</div>
+                        <div class="network-value" id="network-latency">0ms</div>
+                    </div>
+                    <div class="network-card">
+                        <div>頻寬使用</div>
+                        <div class="network-value" id="network-bandwidth">0 Mbps</div>
+                    </div>
+                    <div class="network-card">
+                        <div>連線品質</div>
+                        <div class="network-value" id="connection-quality">良好</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 系統日誌 -->
+            <div class="log-section">
+                <div class="log-header">
+                    <h3>📝 系統日誌</h3>
+                    <button class="btn btn-success" onclick="exportLogs()">📤 匯出日誌</button>
+                </div>
+                <div class="log-container" id="log-container">
+                    <div class="log-entry log-info">
+                        <div class="log-time">系統初始化</div>
+                        <div class="log-message">系統監控測試頁面已載入</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // 系統監控測試類別
+        class SystemMonitorTest {
+            constructor() {
+                this.logs = [];
+                this.isOnline = false;
+                this.responseTime = 0;
+                this.networkLatency = 0;
+                this.onlineUsers = 0;
+                
+                this.init();
+            }
+
+            init() {
+                this.addLog('info', '系統監控測試初始化完成');
+                this.updateSystemStatus();
+                this.startAutoUpdate();
+            }
+
+            addLog(level, message, data = null) {
+                const timestamp = new Date().toLocaleString('zh-TW');
+                const logEntry = {
+                    timestamp,
+                    level,
+                    message,
+                    data
+                };
+                this.logs.push(logEntry);
+                this.displayLog(logEntry);
+            }
+
+            displayLog(logEntry) {
+                const container = document.getElementById('log-container');
+                const logDiv = document.createElement('div');
+                logDiv.className = `log-entry log-${logEntry.level}`;
+                
+                let dataStr = '';
+                if (logEntry.data) {
+                    dataStr = `<div class="log-data" style="font-size: 11px; color: #a0aec0; margin-top: 2px;">${JSON.stringify(logEntry.data)}</div>`;
+                }
+                
+                logDiv.innerHTML = `
+                    <div class="log-time">${logEntry.timestamp}</div>
+                    <div class="log-message">${logEntry.message}</div>
+                    ${dataStr}
+                `;
+                
+                container.insertBefore(logDiv, container.firstChild);
+                
+                // 保持最多20條日誌
+                while (container.children.length > 20) {
+                    container.removeChild(container.lastChild);
+                }
+            }
+
+            async testNetwork() {
+                try {
+                    this.addLog('info', '開始網路連線測試');
+                    
+                    const startTime = Date.now();
+                    const response = await fetch('/favicon.ico', { 
+                        method: 'HEAD',
+                        cache: 'no-cache'
+                    });
+                    const endTime = Date.now();
+                    
+                    this.responseTime = endTime - startTime;
+                    this.networkLatency = this.responseTime;
+                    this.isOnline = response.ok;
+                    
+                    this.addLog('success', `網路測試完成，延遲: ${this.responseTime}ms`);
+                    
+                    return true;
+                } catch (error) {
+                    this.isOnline = false;
+                    this.responseTime = 0;
+                    this.networkLatency = 0;
+                    
+                    this.addLog('error', '網路連線測試失敗', error.message);
+                    return false;
+                } finally {
+                    this.updateUI();
+                }
+            }
+
+            updateSystemStatus() {
+                // 模擬系統狀態更新
+                this.onlineUsers = Math.floor(Math.random() * 50) + 10;
+                this.networkLatency = Math.floor(Math.random() * 100) + 20;
+                
+                // 使用navigator.onLine檢查瀏覽器網路狀態
+                this.isOnline = navigator.onLine;
+                
+                this.updateUI();
+            }
+
+            updateUI() {
+                // 更新系統狀態
+                const indicator = document.getElementById('system-indicator');
+                const statusText = document.getElementById('system-status-text');
+                
+                if (this.isOnline) {
+                    indicator.className = 'status-indicator status-online';
+                    statusText.textContent = '線上';
+                } else {
+                    indicator.className = 'status-indicator status-offline';
+                    statusText.textContent = '離線';
+                }
+
+                // 更新網路狀態
+                document.getElementById('network-status-text').textContent = 
+                    this.isOnline ? '正常' : '中斷';
+                
+                // 更新回應時間
+                document.getElementById('response-time-text').textContent = 
+                    this.responseTime > 0 ? `${this.responseTime} ms` : '-- ms';
+                
+                // 更新線上人數
+                document.getElementById('online-users-text').textContent = this.onlineUsers;
+                
+                // 更新網路監控數據
+                document.getElementById('network-latency').textContent = `${this.networkLatency}ms`;
+                document.getElementById('network-bandwidth').textContent = `${Math.floor(Math.random() * 100)} Mbps`;
+                
+                const quality = this.networkLatency < 50 ? '良好' : 
+                               this.networkLatency < 100 ? '一般' : '較差';
+                document.getElementById('connection-quality').textContent = quality;
+            }
+
+            startAutoUpdate() {
+                // 每5秒更新一次系統狀態
+                setInterval(() => {
+                    this.updateSystemStatus();
+                }, 5000);
+                
+                // 每30秒進行一次網路測試
+                setInterval(() => {
+                    this.testNetwork();
+                }, 30000);
+            }
+
+            clearLogs() {
+                this.logs = [];
+                document.getElementById('log-container').innerHTML = '';
+                this.addLog('info', '系統日誌已清除');
+            }
+
+            exportLogs() {
+                try {
+                    const logText = this.logs.map(log => {
+                        return `[${log.timestamp}] [${log.level.toUpperCase()}] ${log.message}`;
+                    }).join('\n');
+                    
+                    const blob = new Blob([logText], { type: 'text/plain' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `system-logs-${new Date().toISOString().slice(0, 10)}.txt`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    this.addLog('success', '系統日誌匯出成功');
+                } catch (error) {
+                    this.addLog('error', '日誌匯出失敗', error.message);
+                }
+            }
+        }
+
+        // 初始化系統監控
+        let monitor;
+        
+        window.testSystem = async function() {
+            if (!monitor) {
+                monitor = new SystemMonitorTest();
+            }
+            await monitor.testNetwork();
+        };
+        
+        window.refreshData = function() {
+            if (monitor) {
+                monitor.updateSystemStatus();
+                monitor.addLog('info', '手動刷新系統數據');
+            }
+        };
+        
+        window.clearLogs = function() {
+            if (monitor) {
+                monitor.clearLogs();
+            }
+        };
+        
+        window.exportLogs = function() {
+            if (monitor) {
+                monitor.exportLogs();
+            }
+        };
+
+        // 頁面載入完成後初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            monitor = new SystemMonitorTest();
+            monitor.addLog('success', '系統監控測試頁面載入完成');
+        });
+    </script>
+</body>
+</html>
