@@ -39,6 +39,10 @@ const navItems = {
 
 async function handleLogout() {
     showLoader();
+    clearAllListeners();
+    unsubscribeSession();
+    unsubscribeSystemSettings();
+
     try {
         const logDocId = localStorage.getItem('logDocId');
         if (logDocId) {
@@ -61,9 +65,9 @@ async function handleLogout() {
 
 function handleAuthStateChange(router, closeSidebar) {
     onAuthStateChanged(auth, async (user) => {
+        clearAllListeners();
         unsubscribeSystemSettings();
         unsubscribeSession();
-        clearAllListeners();
 
         const appContainer = document.getElementById('app');
         if (user && user.email) {
@@ -91,19 +95,11 @@ function handleAuthStateChange(router, closeSidebar) {
                 }
                 
                 const userDisplay = document.getElementById('user-display');
-                if (userDisplay) {
+                const navContainer = document.getElementById('main-nav');
+                if (userDisplay && navContainer) {
                     const userRole = currentUser.role || 'staff';
                     userDisplay.textContent = `${currentUser.fullName || currentUser.username} (${roleMap[userRole]})`;
-                }
-                
-                const logoutBtn = document.getElementById('logout-btn');
-                if (logoutBtn) {
-                    logoutBtn.addEventListener('click', handleLogout);
-                }
-                
-                const navContainer = document.getElementById('main-nav');
-                if (navContainer) {
-                    const userRole = currentUser.role || 'staff';
+                    
                     const allowedNavs = navConfig[userRole] || [];
                     navContainer.innerHTML = allowedNavs.map(key => {
                         const item = navItems[key];
@@ -111,19 +107,19 @@ function handleAuthStateChange(router, closeSidebar) {
                     }).join('');
                 }
                 
+                const logoutBtn = document.getElementById('logout-btn');
+                if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
+                
                 const sidebarOverlay = document.getElementById('sidebar-overlay');
                 if(sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
                 
                 document.querySelectorAll('.nav-btn').forEach(btn => {
                     btn.addEventListener('click', () => {
-                        if (window.innerWidth < 768) {
-                            closeSidebar();
-                        }
+                        if (window.innerWidth < 768) closeSidebar();
                     });
                 });
                 
                 unsubscribeSystemSettings = listenToSystemSettings();
-                
                 await router();
 
             } else {
