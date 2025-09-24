@@ -8,12 +8,13 @@ import { listenToSystemSettings } from "./settings.js";
 let currentUser = null;
 let unsubscribeSystemSettings = () => {};
 let unsubscribeSession = () => {};
-let pageUnsubscribers = []; // Centralized array for page listeners
 
-function clearPageListeners() {
-    pageUnsubscribers.forEach(unsub => unsub());
-    pageUnsubscribers = [];
-}
+const roleMap = {
+    'system_admin': '系統管理員',
+    'senior_manager': '高階主管',
+    'junior_manager': '初階主管',
+    'staff': '勤務人員'
+};
 
 async function handleLogout() {
     showLoader();
@@ -39,9 +40,9 @@ async function handleLogout() {
 
 function handleAuthStateChange(router, closeSidebar) {
     onAuthStateChanged(auth, async (user) => {
+        // Stop listening to global listeners when auth state changes.
         unsubscribeSystemSettings();
         unsubscribeSession();
-        clearPageListeners(); // Clear listeners on every auth state change
 
         const appContainer = document.getElementById('app');
         if (user && user.email) {
@@ -51,6 +52,7 @@ function handleAuthStateChange(router, closeSidebar) {
             if (userSnap.exists()) {
                 currentUser = { uid: user.uid, ...userSnap.data() };
 
+                // Start session listener for single-device enforcement
                 const localSessionId = localStorage.getItem('loginSessionId');
                 unsubscribeSession = onSnapshot(userRef, (userDoc) => {
                     if (userDoc.exists()) {
@@ -86,16 +88,16 @@ function handleAuthStateChange(router, closeSidebar) {
                 
                 unsubscribeSystemSettings = listenToSystemSettings();
                 
-                // The router will now load the page and return its listeners
-                pageUnsubscribers = await router();
+                // Just call the router. It will handle its own listeners.
+                await router();
 
             } else {
                 await handleLogout();
             }
         } else {
             currentUser = null;
-            const response = await fetch('pages/login.html');
-            appContainer.innerHTML = await response.text();
+            // The router will handle showing the login page.
+            await router(); 
             setupLoginForm();
         }
     });
