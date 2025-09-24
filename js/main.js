@@ -5,13 +5,6 @@ import { initLocationPage } from './location.js';
 import { initSettingsPage } from './settings.js';
 
 const app = document.getElementById('app');
-let pageListeners = []; // Holds the listeners for the currently active page
-
-// Function to clear page-specific listeners
-window.clearPageListeners = () => {
-    pageListeners.forEach(unsub => unsub());
-    pageListeners = [];
-};
 
 // --- Sidebar Logic ---
 function openSidebar() {
@@ -33,9 +26,8 @@ function closeSidebar() {
 }
 
 async function router() {
-    // Always clear the listeners from the previous page before loading the new one
-    window.clearPageListeners();
-
+    // This function will now return an array of unsubscribe functions for the loaded page
+    // The clearing of listeners is now handled by the auth state change handler
     const mainLayout = document.getElementById('main-view');
     if (!mainLayout) {
         try {
@@ -70,7 +62,6 @@ async function router() {
             case 'location': newListeners = initLocationPage(); break;
             case 'settings': newListeners = await initSettingsPage(); break; 
         }
-        pageListeners = newListeners; // Store the new listeners
 
         // Update active nav link
         document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -83,8 +74,10 @@ async function router() {
             }
         });
 
+        return newListeners; // Return the array of unsubscribe functions
     } catch (error) {
         mainContentArea.innerHTML = `<p class="text-center text-red-500">無法載入頁面: ${error.message}</p>`;
+        return [];
     }
 }
 
@@ -93,4 +86,3 @@ window.addEventListener('hashchange', router);
 document.addEventListener('DOMContentLoaded', () => {
     handleAuthStateChange(router, closeSidebar);
 });
-

@@ -7,15 +7,13 @@ import { listenToSystemSettings } from "./settings.js";
 
 let currentUser = null;
 let unsubscribeSystemSettings = () => {};
-let unsubscribeSession = () => {}; // Listener for session validation
+let unsubscribeSession = () => {};
+let pageUnsubscribers = []; // Centralized array for page listeners
 
-const roleMap = {
-    'system_admin': '系統管理員',
-    'senior_manager': '高階主管',
-    'junior_manager': '初階主管',
-    'staff': '勤務人員'
-};
-
+function clearPageListeners() {
+    pageUnsubscribers.forEach(unsub => unsub());
+    pageUnsubscribers = [];
+}
 
 async function handleLogout() {
     showLoader();
@@ -25,7 +23,6 @@ async function handleLogout() {
             const logDocRef = doc(db, 'login_logs', logDocId);
             await updateDoc(logDocRef, { logoutTimestamp: serverTimestamp() });
         }
-        // Clear the session ID in Firestore on logout
         if (currentUser && currentUser.uid) {
             await updateDoc(doc(db, 'users', currentUser.uid), { loginSessionId: null });
         }
@@ -42,13 +39,9 @@ async function handleLogout() {
 
 function handleAuthStateChange(router, closeSidebar) {
     onAuthStateChanged(auth, async (user) => {
-        // Always clear all listeners on any auth state change
         unsubscribeSystemSettings();
         unsubscribeSession();
-        if (window.clearPageListeners) {
-            window.clearPageListeners();
-        }
-
+        clearPageListeners(); // Clear listeners on every auth state change
 
         const appContainer = document.getElementById('app');
         if (user && user.email) {
@@ -58,13 +51,12 @@ function handleAuthStateChange(router, closeSidebar) {
             if (userSnap.exists()) {
                 currentUser = { uid: user.uid, ...userSnap.data() };
 
-                // Start session listener for single-device enforcement
                 const localSessionId = localStorage.getItem('loginSessionId');
                 unsubscribeSession = onSnapshot(userRef, (userDoc) => {
                     if (userDoc.exists()) {
                         const remoteSessionId = userDoc.data().loginSessionId;
                         if (localSessionId && remoteSessionId && localSessionId !== remoteSessionId) {
-                            unsubscribeSession(); // Stop listening
+                            unsubscribeSession();
                             showCustomAlert('您的帳號已在另一台裝置登入，此裝置將自動登出。', '強制登出');
                             handleLogout();
                         }
@@ -94,8 +86,8 @@ function handleAuthStateChange(router, closeSidebar) {
                 
                 unsubscribeSystemSettings = listenToSystemSettings();
                 
-                await router();
-
+                // The router will now load the page and return its listeners
+                pageUnsubscribers = await router();
 
             } else {
                 await handleLogout();
