@@ -44,19 +44,16 @@ function setupLoginForm() {
             if (!userDoc.exists()) throw new Error("找不到對應的使用者資料。");
             const userData = userDoc.data();
 
-            // Session ID for single-device login
             const sessionId = crypto.randomUUID();
             localStorage.setItem('loginSessionId', sessionId);
             await updateDoc(doc(db, 'users', user.uid), { loginSessionId: sessionId });
 
-            // Device ID logic for login history
             let deviceId = localStorage.getItem('deviceId');
             if (!deviceId) {
                 deviceId = crypto.randomUUID();
                 localStorage.setItem('deviceId', deviceId);
             }
 
-            // Create Login Log
             const logDocRef = await addDoc(collection(db, "login_logs"), {
                 userId: user.uid,
                 deviceId: deviceId,

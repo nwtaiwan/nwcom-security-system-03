@@ -3,6 +3,7 @@ import { initUsersPage } from './users.js';
 import { initCommunityPage } from './community.js';
 import { initLocationPage } from './location.js';
 import { initSettingsPage } from './settings.js';
+import { addListeners, clearAllListeners } from './listeners.js';
 
 const app = document.getElementById('app');
 
@@ -26,23 +27,23 @@ function closeSidebar() {
 }
 
 async function router() {
-    // This function will now return an array of unsubscribe functions for the loaded page.
-    // The responsibility of cleaning up listeners is now fully on the auth handler.
+    // 1. Always clear listeners from the previous page
+    clearAllListeners();
+
     const mainLayout = document.getElementById('main-view');
     if (!mainLayout) {
         try {
             const response = await fetch('pages/login.html');
             app.innerHTML = await response.text();
-            return []; // Return empty listeners for login page
         } catch (e) {
             app.innerHTML = `<p class="text-center text-red-500">無法載入登入頁面。</p>`;
-            return [];
         }
+        return;
     }
     
     const page = window.location.hash.substring(1) || 'users';
     const mainContentArea = document.getElementById('main-content');
-    if (!mainContentArea) return [];
+    if (!mainContentArea) return;
 
     try {
         const response = await fetch(`pages/${page}.html`);
@@ -54,13 +55,16 @@ async function router() {
             menuToggleButton.addEventListener('click', openSidebar);
         }
         
-        let listeners = [];
+        // 2. Initialize the new page and get its listeners
+        let newListeners = [];
         switch(page) {
-            case 'users': listeners = initUsersPage(); break;
-            case 'community': listeners = initCommunityPage(); break;
-            case 'location': listeners = initLocationPage(); break;
-            case 'settings': listeners = await initSettingsPage(); break; 
+            case 'users': newListeners = initUsersPage(); break;
+            case 'community': newListeners = initCommunityPage(); break;
+            case 'location': newListeners = initLocationPage(); break;
+            case 'settings': newListeners = await initSettingsPage(); break; 
         }
+        // 3. Register the new listeners
+        addListeners(newListeners); 
 
         // Update active nav link
         document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -72,11 +76,8 @@ async function router() {
                 btn.classList.add('text-gray-600', 'hover:bg-gray-200');
             }
         });
-
-        return listeners; // Return the array of unsubscribe functions
     } catch (error) {
         mainContentArea.innerHTML = `<p class="text-center text-red-500">無法載入頁面: ${error.message}</p>`;
-        return [];
     }
 }
 
@@ -85,3 +86,4 @@ window.addEventListener('hashchange', router);
 document.addEventListener('DOMContentLoaded', () => {
     handleAuthStateChange(router, closeSidebar);
 });
+

@@ -4,18 +4,18 @@ import { showCustomAlert, showLoader, hideLoader } from './utils.js';
 import { db, auth } from './firebase.js';
 import { setupLoginForm } from './login.js';
 import { listenToSystemSettings } from "./settings.js";
+import { clearAllListeners } from "./listeners.js";
 
 let currentUser = null;
 let unsubscribeSystemSettings = () => {};
 let unsubscribeSession = () => {};
-let pageUnsubscribers = []; // Centralized array for page listeners
 
-function clearPageListeners() {
-    if (pageUnsubscribers && pageUnsubscribers.length > 0) {
-        pageUnsubscribers.forEach(unsub => unsub());
-    }
-    pageUnsubscribers = [];
-}
+const roleMap = {
+    'system_admin': '系統管理員',
+    'senior_manager': '高階主管',
+    'junior_manager': '初階主管',
+    'staff': '勤務人員'
+};
 
 async function handleLogout() {
     showLoader();
@@ -41,10 +41,10 @@ async function handleLogout() {
 
 function handleAuthStateChange(router, closeSidebar) {
     onAuthStateChanged(auth, async (user) => {
-        // Clear all listeners on any auth state change
+        // Clear all global and page-specific listeners on any auth state change
         unsubscribeSystemSettings();
         unsubscribeSession();
-        clearPageListeners();
+        clearAllListeners();
 
         const appContainer = document.getElementById('app');
         if (user && user.email) {
@@ -53,12 +53,6 @@ function handleAuthStateChange(router, closeSidebar) {
             
             if (userSnap.exists()) {
                 currentUser = { uid: user.uid, ...userSnap.data() };
-                const roleMap = {
-                    'system_admin': '系統管理員',
-                    'senior_manager': '高階主管',
-                    'junior_manager': '初階主管',
-                    'staff': '勤務人員'
-                };
 
                 const localSessionId = localStorage.getItem('loginSessionId');
                 unsubscribeSession = onSnapshot(userRef, (userDoc) => {
@@ -86,32 +80,27 @@ function handleAuthStateChange(router, closeSidebar) {
                 }
                 
                 document.querySelectorAll('.nav-btn').forEach(btn => {
-                    btn.addEventListener('click', async () => {
-                         if (window.innerWidth < 768) {
+                    btn.addEventListener('click', () => {
+                        if (window.innerWidth < 768) {
                             closeSidebar();
                         }
-                        // When a nav link is clicked, re-run the router to clear old listeners and set up new ones.
-                        clearPageListeners();
-                        pageUnsubscribers = await router();
                     });
                 });
                 
                 unsubscribeSystemSettings = listenToSystemSettings();
                 
-                // The router will now load the page and return its listeners
-                pageUnsubscribers = await router();
+                await router();
 
             } else {
                 await handleLogout();
             }
         } else {
             currentUser = null;
-            // The router will handle showing the login page.
             await router(); 
             setupLoginForm();
         }
     });
 }
 
-export { handleAuthStateChange, currentUser };
+export { handleAuthStateChange, currentUser, roleMap };
 
