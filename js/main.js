@@ -101,3 +101,4 @@ window.addEventListener('hashchange', router);
 document.addEventListener('DOMContentLoaded', () => {
     handleAuthStateChange(router, closeSidebar);
 });
+

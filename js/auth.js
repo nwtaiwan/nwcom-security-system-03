@@ -39,7 +39,6 @@ const navItems = {
 
 async function handleLogout() {
     showLoader();
-    // First, stop all active data listeners to prevent permission errors after sign-out.
     clearAllListeners();
     unsubscribeSession();
     unsubscribeSystemSettings();
@@ -66,10 +65,9 @@ async function handleLogout() {
 
 function handleAuthStateChange(router, closeSidebar) {
     onAuthStateChanged(auth, async (user) => {
-        // Clear all global and page-specific listeners on any auth state change
+        clearAllListeners();
         unsubscribeSystemSettings();
         unsubscribeSession();
-        clearAllListeners();
 
         const appContainer = document.getElementById('app');
         if (user && user.email) {
@@ -95,9 +93,12 @@ function handleAuthStateChange(router, closeSidebar) {
                     const response = await fetch('pages/main_layout.html');
                     appContainer.innerHTML = await response.text();
                 }
-
+                
                 const userDisplay = document.getElementById('user-display');
                 const navContainer = document.getElementById('main-nav');
+                const logoutBtn = document.getElementById('logout-btn');
+                const sidebarOverlay = document.getElementById('sidebar-overlay');
+
                 if (userDisplay && navContainer) {
                     const userRole = currentUser.role || 'staff';
                     userDisplay.textContent = `${currentUser.fullName || currentUser.username} (${roleMap[userRole]})`;
@@ -107,23 +108,25 @@ function handleAuthStateChange(router, closeSidebar) {
                         const item = navItems[key];
                         return `<a href="${item.href}" class="nav-btn font-semibold p-3 rounded-lg flex items-center justify-center">${item.icon}<span>${item.text}</span></a>`;
                     }).join('');
-                }
-                
-                const logoutBtn = document.getElementById('logout-btn');
-                if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
-                
-                const sidebarOverlay = document.getElementById('sidebar-overlay');
-                if(sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
-                
-                document.querySelectorAll('.nav-btn').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        if (window.innerWidth < 768) {
-                            closeSidebar();
+
+                    navContainer.addEventListener('click', (e) => {
+                        if (e.target.closest('.nav-btn')) {
+                            if (window.innerWidth < 768) {
+                                closeSidebar();
+                            }
                         }
                     });
-                });
+                }
+                
+                if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
+                if(sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
                 
                 unsubscribeSystemSettings = listenToSystemSettings();
+                
+                // Set default page to dashboard after login
+                if (!window.location.hash || window.location.hash === "#") {
+                    window.location.hash = '#dashboard';
+                }
                 
                 await router();
 
