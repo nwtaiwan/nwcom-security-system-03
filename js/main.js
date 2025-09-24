@@ -5,6 +5,13 @@ import { initLocationPage } from './location.js';
 import { initSettingsPage } from './settings.js';
 
 const app = document.getElementById('app');
+let pageListeners = []; // Holds the listeners for the currently active page
+
+// Function to clear page-specific listeners
+window.clearPageListeners = () => {
+    pageListeners.forEach(unsub => unsub());
+    pageListeners = [];
+};
 
 // --- Sidebar Logic ---
 function openSidebar() {
@@ -26,10 +33,8 @@ function closeSidebar() {
 }
 
 async function router() {
-    // This function will now return an array of unsubscribe functions for the loaded page
-    if (window.clearPageListeners) {
-        window.clearPageListeners();
-    }
+    // Always clear the listeners from the previous page before loading the new one
+    window.clearPageListeners();
 
     const mainLayout = document.getElementById('main-view');
     if (!mainLayout) {
@@ -57,13 +62,15 @@ async function router() {
             menuToggleButton.addEventListener('click', openSidebar);
         }
         
-        let listeners = [];
+        // Initialize the new page and get its listeners
+        let newListeners = [];
         switch(page) {
-            case 'users': listeners = initUsersPage(); break;
-            case 'community': listeners = initCommunityPage(); break;
-            case 'location': listeners = initLocationPage(); break;
-            case 'settings': listeners = await initSettingsPage(); break; 
+            case 'users': newListeners = initUsersPage(); break;
+            case 'community': newListeners = initCommunityPage(); break;
+            case 'location': newListeners = initLocationPage(); break;
+            case 'settings': newListeners = await initSettingsPage(); break; 
         }
+        pageListeners = newListeners; // Store the new listeners
 
         // Update active nav link
         document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -76,10 +83,8 @@ async function router() {
             }
         });
 
-        return listeners; // Return the array of unsubscribe functions
     } catch (error) {
         mainContentArea.innerHTML = `<p class="text-center text-red-500">無法載入頁面: ${error.message}</p>`;
-        return [];
     }
 }
 

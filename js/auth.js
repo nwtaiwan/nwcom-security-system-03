@@ -16,6 +16,7 @@ const roleMap = {
     'staff': '勤務人員'
 };
 
+
 async function handleLogout() {
     showLoader();
     try {
@@ -93,10 +94,7 @@ function handleAuthStateChange(router, closeSidebar) {
                 
                 unsubscribeSystemSettings = listenToSystemSettings();
                 
-                const pageUnsubscribers = await router(); 
-                window.clearPageListeners = () => {
-                    pageUnsubscribers.forEach(unsub => unsub());
-                };
+                await router();
 
 
             } else {
@@ -112,4 +110,3 @@ function handleAuthStateChange(router, closeSidebar) {
 }
 
 export { handleAuthStateChange, currentUser, roleMap };
-
