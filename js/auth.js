@@ -41,8 +41,13 @@ async function handleLogout() {
 
 function handleAuthStateChange(router, closeSidebar) {
     onAuthStateChanged(auth, async (user) => {
+        // Always clear all listeners on any auth state change
         unsubscribeSystemSettings();
-        unsubscribeSession(); // Always clear previous session listener
+        unsubscribeSession();
+        if (window.clearPageListeners) {
+            window.clearPageListeners();
+        }
+
 
         const appContainer = document.getElementById('app');
         if (user && user.email) {
@@ -87,8 +92,13 @@ function handleAuthStateChange(router, closeSidebar) {
                 });
                 
                 unsubscribeSystemSettings = listenToSystemSettings();
+                
+                const pageUnsubscribers = await router(); 
+                window.clearPageListeners = () => {
+                    pageUnsubscribers.forEach(unsub => unsub());
+                };
 
-                await router();
+
             } else {
                 await handleLogout();
             }

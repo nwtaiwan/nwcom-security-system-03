@@ -26,38 +26,43 @@ function closeSidebar() {
 }
 
 async function router() {
+    // This function will now return an array of unsubscribe functions for the loaded page
+    if (window.clearPageListeners) {
+        window.clearPageListeners();
+    }
+
     const mainLayout = document.getElementById('main-view');
     if (!mainLayout) {
         try {
             const response = await fetch('pages/login.html');
             app.innerHTML = await response.text();
-            return 'login';
+            return []; // Return empty listeners for login page
         } catch (e) {
             app.innerHTML = `<p class="text-center text-red-500">無法載入登入頁面。</p>`;
-            return null;
+            return [];
         }
     }
     
     const page = window.location.hash.substring(1) || 'users';
     const mainContentArea = document.getElementById('main-content');
-    if (!mainContentArea) return null;
+    if (!mainContentArea) return [];
 
     try {
         const response = await fetch(`pages/${page}.html`);
         if (!response.ok) throw new Error('找不到頁面');
         mainContentArea.innerHTML = await response.text();
         
-        // Attach listener AFTER content is loaded
         const menuToggleButton = mainContentArea.querySelector('.menu-toggle-btn');
         if (menuToggleButton) {
             menuToggleButton.addEventListener('click', openSidebar);
         }
         
+        let listeners = [];
         switch(page) {
-            case 'users': initUsersPage(); break;
-            case 'community': initCommunityPage(); break;
-            case 'location': initLocationPage(); break;
-            case 'settings': initSettingsPage(); break;
+            case 'users': listeners = initUsersPage(); break;
+            case 'community': listeners = initCommunityPage(); break;
+            case 'location': listeners = initLocationPage(); break;
+            case 'settings': listeners = await initSettingsPage(); break; 
         }
 
         // Update active nav link
@@ -71,11 +76,10 @@ async function router() {
             }
         });
 
-
-        return page;
+        return listeners; // Return the array of unsubscribe functions
     } catch (error) {
         mainContentArea.innerHTML = `<p class="text-center text-red-500">無法載入頁面: ${error.message}</p>`;
-        return null;
+        return [];
     }
 }
 
