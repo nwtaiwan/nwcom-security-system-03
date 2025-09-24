@@ -1,4 +1,4 @@
-import { db, storage, secondaryAuth } from './firebase.js';
+import { db, storage, auth, secondaryAuth } from './firebase.js';
 import { getDoc, doc, setDoc, collection, query, onSnapshot, deleteDoc, updateDoc, addDoc, serverTimestamp, getDocs, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 import { createUserWithEmailAndPassword, fetchSignInMethodsForEmail } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -142,7 +142,6 @@ function listenToLoginLogs() {
 
 function initUsersPage() {
     settingsPromise.then(() => {
-        // DOM Elements
         const showAddUserModalBtn = document.getElementById('show-add-user-modal-btn');
         const userModal = document.getElementById('user-modal');
         const userForm = document.getElementById('user-form');
@@ -155,19 +154,16 @@ function initUsersPage() {
         const passwordModalInput = document.getElementById('password-modal');
         const usersListTbody = document.getElementById('users-list');
         
-        // Sub Tab Elements
         const subTabUserListBtn = document.getElementById('sub-tab-user-list');
         const subTabLoginHistoryBtn = document.getElementById('sub-tab-login-history');
         const accountListContent = document.getElementById('account-list-content');
         const loginHistoryContent = document.getElementById('login-history-content');
         
-        // Search and Filter Elements
         const searchInput = document.getElementById('search-input');
         const filterJobTitle = document.getElementById('filter-job-title');
         const filterCertification = document.getElementById('filter-certification');
         const filterStatus = document.getElementById('filter-status');
 
-        // --- Sub Tab Logic ---
         function switchUserManagementTab(tab) {
             accountListContent.classList.add('hidden');
             loginHistoryContent.classList.add('hidden');
@@ -190,14 +186,11 @@ function initUsersPage() {
         populateFilterDropdowns();
         window.addEventListener('settingsUpdated', populateFilterDropdowns);
 
-
-        // --- Event Listeners for Filtering ---
         searchInput.addEventListener('input', renderUserList);
         filterJobTitle.addEventListener('change', renderUserList);
         filterCertification.addEventListener('change', renderUserList);
         filterStatus.addEventListener('change', renderUserList);
 
-        // --- Modal Logic ---
         function populateDynamicFieldsInModal() {
             const jobTitleSelect = document.getElementById('job-title');
             const certCheckboxes = document.getElementById('certifications-checkboxes');
@@ -366,13 +359,13 @@ function initUsersPage() {
                 }
             }
         });
-        
-        // Initial data load
-        const unsubUsers = listenToUsers();
-        const unsubLogs = listenToLoginLogs();
-
-        return [unsubUsers, unsubLogs];
     });
+    
+    const unsubUsers = listenToUsers();
+    const unsubLogs = listenToLoginLogs();
+
+    return [unsubUsers, unsubLogs];
 }
 
 export { initUsersPage };
+

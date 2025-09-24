@@ -39,6 +39,7 @@ const navItems = {
 
 async function handleLogout() {
     showLoader();
+    // First, stop all active data listeners to prevent permission errors after sign-out.
     clearAllListeners();
     unsubscribeSession();
     unsubscribeSystemSettings();
@@ -65,9 +66,10 @@ async function handleLogout() {
 
 function handleAuthStateChange(router, closeSidebar) {
     onAuthStateChanged(auth, async (user) => {
-        clearAllListeners();
+        // Clear all global and page-specific listeners on any auth state change
         unsubscribeSystemSettings();
         unsubscribeSession();
+        clearAllListeners();
 
         const appContainer = document.getElementById('app');
         if (user && user.email) {
@@ -93,7 +95,7 @@ function handleAuthStateChange(router, closeSidebar) {
                     const response = await fetch('pages/main_layout.html');
                     appContainer.innerHTML = await response.text();
                 }
-                
+
                 const userDisplay = document.getElementById('user-display');
                 const navContainer = document.getElementById('main-nav');
                 if (userDisplay && navContainer) {
@@ -115,11 +117,14 @@ function handleAuthStateChange(router, closeSidebar) {
                 
                 document.querySelectorAll('.nav-btn').forEach(btn => {
                     btn.addEventListener('click', () => {
-                        if (window.innerWidth < 768) closeSidebar();
+                        if (window.innerWidth < 768) {
+                            closeSidebar();
+                        }
                     });
                 });
                 
                 unsubscribeSystemSettings = listenToSystemSettings();
+                
                 await router();
 
             } else {
@@ -134,3 +139,4 @@ function handleAuthStateChange(router, closeSidebar) {
 }
 
 export { handleAuthStateChange, currentUser, roleMap };
+
