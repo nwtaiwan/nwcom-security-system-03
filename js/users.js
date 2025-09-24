@@ -7,6 +7,23 @@ import { systemSettings } from './settings.js';
 
 let allUsers = [];
 
+function populateFilterDropdowns() {
+    const filterJobTitle = document.getElementById('filter-job-title');
+    const filterCertification = document.getElementById('filter-certification');
+    if(!filterJobTitle || !filterCertification) return;
+
+    filterJobTitle.innerHTML = '<option value="all">全部職稱</option>';
+    (systemSettings.jobTitles || []).forEach(title => {
+        filterJobTitle.innerHTML += `<option value="${title}">${title}</option>`;
+    });
+
+    filterCertification.innerHTML = '<option value="all">全部證照</option>';
+    (systemSettings.certifications || []).forEach(cert => {
+        filterCertification.innerHTML += `<option value="${cert}">${cert}</option>`;
+    });
+}
+
+
 function renderUserList() {
     const userListTbody = document.getElementById('users-list');
     if (!userListTbody) return;
@@ -72,8 +89,6 @@ function listenToUsers() {
         (snapshot) => {
             allUsers = [];
             snapshot.forEach(doc => {
-                // Assuming currentUser is accessible or passed if needed
-                // For simplicity, we'll just exclude the current user by a global variable or another mechanism
                 allUsers.push({ id: doc.id, ...doc.data() });
             });
             renderUserList();
@@ -172,18 +187,9 @@ function initUsersPage() {
     subTabLoginHistoryBtn.addEventListener('click', () => switchUserManagementTab('loginHistory'));
     
     // --- Populate Filters ---
-    function populateFilterDropdowns() {
-        filterJobTitle.innerHTML = '<option value="all">全部職稱</option>';
-        (systemSettings.jobTitles || []).forEach(title => {
-            filterJobTitle.innerHTML += `<option value="${title}">${title}</option>`;
-        });
-
-        filterCertification.innerHTML = '<option value="all">全部證照</option>';
-        (systemSettings.certifications || []).forEach(cert => {
-            filterCertification.innerHTML += `<option value="${cert}">${cert}</option>`;
-        });
-    }
     populateFilterDropdowns();
+    window.addEventListener('settingsUpdated', populateFilterDropdowns);
+
 
     // --- Event Listeners for Filtering ---
     searchInput.addEventListener('input', renderUserList);

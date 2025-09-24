@@ -5,6 +5,16 @@ import { systemSettings } from './settings.js';
 
 let allCommunities = [];
 
+function populateCommunityFilterDropdowns() {
+    const communityFilterArea = document.getElementById('community-filter-area');
+    if (!communityFilterArea) return;
+    
+    communityFilterArea.innerHTML = '<option value="all">全部區域</option>';
+    (systemSettings.areas || []).forEach(area => {
+        communityFilterArea.innerHTML += `<option value="${area}">${area}</option>`;
+    });
+}
+
 function renderCommunityList() {
     const listBody = document.getElementById('communities-list');
     if (!listBody) return;
@@ -80,13 +90,9 @@ function initCommunityPage() {
     const communitySearchInput = document.getElementById('community-search-input');
     const communityFilterArea = document.getElementById('community-filter-area');
 
-    function populateCommunityFilterDropdowns() {
-        communityFilterArea.innerHTML = '<option value="all">全部區域</option>';
-        (systemSettings.areas || []).forEach(area => {
-            communityFilterArea.innerHTML += `<option value="${area}">${area}</option>`;
-        });
-    }
     populateCommunityFilterDropdowns();
+    window.addEventListener('settingsUpdated', populateCommunityFilterDropdowns);
+
 
     showAddCommunityModalBtn.addEventListener('click', () => {
         communityForm.reset();
