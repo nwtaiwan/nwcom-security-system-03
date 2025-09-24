@@ -1,5 +1,5 @@
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { doc, getDoc, updateDoc, serverTimestamp, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { showCustomAlert, showLoader, hideLoader } from './utils.js';
 import { db, auth } from './firebase.js';
 import { setupLoginForm } from './login.js';
@@ -7,6 +7,7 @@ import { listenToSystemSettings } from "./settings.js";
 
 let currentUser = null;
 let unsubscribeSystemSettings = () => {};
+let unsubscribeSession = () => {}; // Listener for session validation
 
 const roleMap = {
     'system_admin': '系統管理員',
@@ -23,25 +24,46 @@ async function handleLogout() {
             const logDocRef = doc(db, 'login_logs', logDocId);
             await updateDoc(logDocRef, { logoutTimestamp: serverTimestamp() });
         }
+        // Clear the session ID in Firestore on logout
+        if (currentUser && currentUser.uid) {
+            await updateDoc(doc(db, 'users', currentUser.uid), { loginSessionId: null });
+        }
         await signOut(auth);
     } catch (error) {
         console.error("Error during logout process:", error);
         showCustomAlert('登出時發生錯誤，但仍會嘗試清除本機登入狀態。');
     } finally {
         localStorage.removeItem('logDocId');
+        localStorage.removeItem('loginSessionId');
         hideLoader();
     }
 }
 
 function handleAuthStateChange(router, closeSidebar) {
     onAuthStateChanged(auth, async (user) => {
-        unsubscribeSystemSettings(); // Always clear previous listener on auth state change
+        unsubscribeSystemSettings();
+        unsubscribeSession(); // Always clear previous session listener
 
         const appContainer = document.getElementById('app');
         if (user && user.email) {
-            const userDoc = await getDoc(doc(db, 'users', user.uid));
-            if (userDoc.exists()) {
-                currentUser = { uid: user.uid, ...userDoc.data() };
+            const userRef = doc(db, 'users', user.uid);
+            const userSnap = await getDoc(userRef);
+            
+            if (userSnap.exists()) {
+                currentUser = { uid: user.uid, ...userSnap.data() };
+
+                // Start session listener for single-device enforcement
+                const localSessionId = localStorage.getItem('loginSessionId');
+                unsubscribeSession = onSnapshot(userRef, (userDoc) => {
+                    if (userDoc.exists()) {
+                        const remoteSessionId = userDoc.data().loginSessionId;
+                        if (localSessionId && remoteSessionId && localSessionId !== remoteSessionId) {
+                            unsubscribeSession(); // Stop listening
+                            showCustomAlert('您的帳號已在另一台裝置登入，此裝置將自動登出。', '強制登出');
+                            handleLogout();
+                        }
+                    }
+                });
                 
                 if (!document.getElementById('main-view')) {
                     const response = await fetch('pages/main_layout.html');
@@ -64,7 +86,6 @@ function handleAuthStateChange(router, closeSidebar) {
                     });
                 });
                 
-                // Start listening to system settings once the user is authenticated
                 unsubscribeSystemSettings = listenToSystemSettings();
 
                 await router();
