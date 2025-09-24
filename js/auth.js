@@ -69,7 +69,7 @@ function handleAuthStateChange(router, closeSidebar) {
                     appContainer.innerHTML = await response.text();
                 }
                 
-                // Moved user display logic inside the router to ensure elements exist
+                // This logic needs to be inside the router or called after to ensure elements exist
                 const sidebarOverlay = document.getElementById('sidebar-overlay');
                 if(sidebarOverlay) {
                     sidebarOverlay.addEventListener('click', closeSidebar);
@@ -101,3 +101,4 @@ function handleAuthStateChange(router, closeSidebar) {
 
 // Only export the necessary functions and variables
 export { handleAuthStateChange, currentUser };
+
