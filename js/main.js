@@ -47,7 +47,6 @@ async function router() {
         return;
     }
     
-    // Determine the page from the URL hash, default to 'dashboard' for logged-in users
     const page = window.location.hash.substring(1) || 'dashboard';
     const mainContentArea = document.getElementById('main-content');
     if (!mainContentArea) return;

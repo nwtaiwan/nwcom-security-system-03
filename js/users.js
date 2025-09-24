@@ -140,227 +140,228 @@ function listenToLoginLogs() {
      });
 }
 
-function initUsersPage() {
-    settingsPromise.then(() => {
-        const showAddUserModalBtn = document.getElementById('show-add-user-modal-btn');
-        const userModal = document.getElementById('user-modal');
-        const userForm = document.getElementById('user-form');
-        const cancelUserModalBtn = document.getElementById('cancel-user-modal-btn');
-        const userModalTitle = document.getElementById('user-modal-title');
-        const profilePicInput = document.getElementById('profile-pic');
-        const profilePicPreview = document.getElementById('profile-pic-preview');
-        const fullNameInput = document.getElementById('full-name');
-        const usernameModalInput = document.getElementById('username-modal');
-        const passwordModalInput = document.getElementById('password-modal');
-        const usersListTbody = document.getElementById('users-list');
-        
-        const subTabUserListBtn = document.getElementById('sub-tab-user-list');
-        const subTabLoginHistoryBtn = document.getElementById('sub-tab-login-history');
-        const accountListContent = document.getElementById('account-list-content');
-        const loginHistoryContent = document.getElementById('login-history-content');
-        
-        const searchInput = document.getElementById('search-input');
-        const filterJobTitle = document.getElementById('filter-job-title');
-        const filterCertification = document.getElementById('filter-certification');
-        const filterStatus = document.getElementById('filter-status');
+async function initUsersPage() {
+    await settingsPromise;
 
-        function switchUserManagementTab(tab) {
-            accountListContent.classList.add('hidden');
-            loginHistoryContent.classList.add('hidden');
-            subTabUserListBtn.classList.remove('active');
-            subTabLoginHistoryBtn.classList.remove('active');
-            showAddUserModalBtn.style.display = 'none';
+    const showAddUserModalBtn = document.getElementById('show-add-user-modal-btn');
+    const userModal = document.getElementById('user-modal');
+    const userForm = document.getElementById('user-form');
+    const cancelUserModalBtn = document.getElementById('cancel-user-modal-btn');
+    const userModalTitle = document.getElementById('user-modal-title');
+    const profilePicInput = document.getElementById('profile-pic');
+    const profilePicPreview = document.getElementById('profile-pic-preview');
+    const fullNameInput = document.getElementById('full-name');
+    const usernameModalInput = document.getElementById('username-modal');
+    const passwordModalInput = document.getElementById('password-modal');
+    const usersListTbody = document.getElementById('users-list');
+    
+    const subTabUserListBtn = document.getElementById('sub-tab-user-list');
+    const subTabLoginHistoryBtn = document.getElementById('sub-tab-login-history');
+    const accountListContent = document.getElementById('account-list-content');
+    const loginHistoryContent = document.getElementById('login-history-content');
+    
+    const searchInput = document.getElementById('search-input');
+    const filterJobTitle = document.getElementById('filter-job-title');
+    const filterCertification = document.getElementById('filter-certification');
+    const filterStatus = document.getElementById('filter-status');
 
-            if (tab === 'userList') {
-                accountListContent.classList.remove('hidden');
-                subTabUserListBtn.classList.add('active');
-                showAddUserModalBtn.style.display = 'block';
-            } else if (tab === 'loginHistory') {
-                loginHistoryContent.classList.remove('hidden');
-                subTabLoginHistoryBtn.classList.add('active');
-            }
+    function switchUserManagementTab(tab) {
+        accountListContent.classList.add('hidden');
+        loginHistoryContent.classList.add('hidden');
+        subTabUserListBtn.classList.remove('active');
+        subTabLoginHistoryBtn.classList.remove('active');
+        showAddUserModalBtn.style.display = 'none';
+
+        if (tab === 'userList') {
+            accountListContent.classList.remove('hidden');
+            subTabUserListBtn.classList.add('active');
+            showAddUserModalBtn.style.display = 'block';
+        } else if (tab === 'loginHistory') {
+            loginHistoryContent.classList.remove('hidden');
+            subTabLoginHistoryBtn.classList.add('active');
         }
-        subTabUserListBtn.addEventListener('click', () => switchUserManagementTab('userList'));
-        subTabLoginHistoryBtn.addEventListener('click', () => switchUserManagementTab('loginHistory'));
-        
-        populateFilterDropdowns();
-        window.addEventListener('settingsUpdated', populateFilterDropdowns);
+    }
+    subTabUserListBtn.addEventListener('click', () => switchUserManagementTab('userList'));
+    subTabLoginHistoryBtn.addEventListener('click', () => switchUserManagementTab('loginHistory'));
+    
+    populateFilterDropdowns();
+    window.addEventListener('settingsUpdated', populateFilterDropdowns);
 
-        searchInput.addEventListener('input', renderUserList);
-        filterJobTitle.addEventListener('change', renderUserList);
-        filterCertification.addEventListener('change', renderUserList);
-        filterStatus.addEventListener('change', renderUserList);
+    searchInput.addEventListener('input', renderUserList);
+    filterJobTitle.addEventListener('change', renderUserList);
+    filterCertification.addEventListener('change', renderUserList);
+    filterStatus.addEventListener('change', renderUserList);
 
-        function populateDynamicFieldsInModal() {
-            const jobTitleSelect = document.getElementById('job-title');
-            const certCheckboxes = document.getElementById('certifications-checkboxes');
-            jobTitleSelect.innerHTML = '<option value="">未選擇</option>';
-            certCheckboxes.innerHTML = '';
-            (systemSettings.jobTitles || []).forEach(title => {
-                jobTitleSelect.innerHTML += `<option value="${title}">${title}</option>`;
-            });
-            (systemSettings.certifications || []).forEach(cert => {
-                certCheckboxes.innerHTML += `
-                    <label class="flex items-center space-x-2 text-sm">
-                        <input type="checkbox" name="certifications" value="${cert}" class="rounded border-gray-300 text-red-600 shadow-sm focus:border-red-300 focus:ring focus:ring-red-200 focus:ring-opacity-50">
-                        <span>${cert}</span>
-                    </label>
-                `;
-            });
+    function populateDynamicFieldsInModal() {
+        const jobTitleSelect = document.getElementById('job-title');
+        const certCheckboxes = document.getElementById('certifications-checkboxes');
+        jobTitleSelect.innerHTML = '<option value="">未選擇</option>';
+        certCheckboxes.innerHTML = '';
+        (systemSettings.jobTitles || []).forEach(title => {
+            jobTitleSelect.innerHTML += `<option value="${title}">${title}</option>`;
+        });
+        (systemSettings.certifications || []).forEach(cert => {
+            certCheckboxes.innerHTML += `
+                <label class="flex items-center space-x-2 text-sm">
+                    <input type="checkbox" name="certifications" value="${cert}" class="rounded border-gray-300 text-red-600 shadow-sm focus:border-red-300 focus:ring focus:ring-red-200 focus:ring-opacity-50">
+                    <span>${cert}</span>
+                </label>
+            `;
+        });
+    }
+
+    const nameInputHandler = () => {
+        if (!profilePicInput.files[0] && !document.getElementById('user-id').value) {
+            profilePicPreview.src = generateAvatar(fullNameInput.value);
         }
+    };
 
-        const nameInputHandler = () => {
-            if (!profilePicInput.files[0] && !document.getElementById('user-id').value) {
-                profilePicPreview.src = generateAvatar(fullNameInput.value);
-            }
-        };
+    showAddUserModalBtn.addEventListener('click', () => {
+        userForm.reset();
+        document.getElementById('user-id').value = '';
+        userModalTitle.textContent = '新增帳號';
+        profilePicPreview.src = generateAvatar('');
+        passwordModalInput.placeholder = "請設定密碼";
+        passwordModalInput.required = true;
+        usernameModalInput.disabled = false;
+        populateDynamicFieldsInModal();
+        fullNameInput.addEventListener('input', nameInputHandler);
+        userModal.classList.remove('hidden');
+    });
 
-        showAddUserModalBtn.addEventListener('click', () => {
-            userForm.reset();
-            document.getElementById('user-id').value = '';
-            userModalTitle.textContent = '新增帳號';
-            profilePicPreview.src = generateAvatar('');
-            passwordModalInput.placeholder = "請設定密碼";
-            passwordModalInput.required = true;
-            usernameModalInput.disabled = false;
-            populateDynamicFieldsInModal();
-            fullNameInput.addEventListener('input', nameInputHandler);
-            userModal.classList.remove('hidden');
-        });
-
-        cancelUserModalBtn.addEventListener('click', () => {
-            fullNameInput.removeEventListener('input', nameInputHandler);
-            userModal.classList.add('hidden');
-        });
-        
-        profilePicInput.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => profilePicPreview.src = e.target.result;
-                reader.readAsDataURL(file);
-            }
-        });
-
-        userForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            showLoader();
-            
-            const userId = document.getElementById('user-id').value;
-            const username = usernameModalInput.value;
-            const password = passwordModalInput.value;
-            const profilePicFile = profilePicInput.files[0];
-
-            try {
-                let authUserId = userId;
-                let originalProfilePicURL = '';
-
-                if (userId) {
-                    const userDocSnap = await getDoc(doc(db, 'users', userId));
-                    if (userDocSnap.exists()) {
-                        originalProfilePicURL = userDocSnap.data().profilePic || '';
-                    }
-                }
-
-                if (!authUserId) {
-                    if (!password || password.length < 6) throw new Error('新增使用者時，密碼為必填且長度至少6位。');
-                    const email = `${username}@qrsystem.app`;
-                    const signInMethods = await fetchSignInMethodsForEmail(auth, email);
-                    if (signInMethods.length > 0) throw new Error('錯誤：此登入帳號已被使用。');
-
-                    const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
-                    authUserId = userCredential.user.uid;
-                }
-                
-                let finalProfilePicURL = originalProfilePicURL;
-                if (profilePicFile) {
-                    const storageRef = ref(storage, `profile_pictures/${authUserId}`);
-                    const snapshot = await uploadBytes(storageRef, profilePicFile);
-                    finalProfilePicURL = await getDownloadURL(snapshot.ref);
-                }
-                
-                const selectedCerts = Array.from(document.querySelectorAll('#certifications-checkboxes input:checked')).map(cb => cb.value);
-                const userData = {
-                    username,
-                    role: document.getElementById('user-role').value,
-                    employeeId: document.getElementById('employee-id').value,
-                    fullName: document.getElementById('full-name').value,
-                    phoneNumber: document.getElementById('phone-number').value,
-                    address: document.getElementById('address').value,
-                    idCardNumber: document.getElementById('id-card-number').value,
-                    dob: document.getElementById('dob').value,
-                    gender: document.getElementById('gender').value,
-                    jobTitle: document.getElementById('job-title').value,
-                    status: document.getElementById('status').value,
-                    remarks: document.getElementById('remarks').value,
-                    certifications: selectedCerts,
-                    profilePic: finalProfilePicURL
-                };
-
-                await setDoc(doc(db, 'users', authUserId), userData, { merge: true });
-                showCustomAlert(`使用者 ${userId ? '更新' : '建立'} 成功！`);
-                fullNameInput.removeEventListener('input', nameInputHandler);
-                userModal.classList.add('hidden');
-            } catch (error) {
-                console.error("Error saving user:", error);
-                showCustomAlert(`儲存失敗： ${error.message}`);
-            } finally {
-                hideLoader();
-            }
-        });
-
-        usersListTbody.addEventListener('click', async (e) => {
-            const { classList, dataset } = e.target;
-            const { id, username } = dataset;
-            
-            if (classList.contains('delete-user-btn')) {
-                if (await showCustomConfirm(`您確定要刪除帳號 ${username} 嗎？此操作無法復原。`)) {
-                    showLoader();
-                    try {
-                       await deleteDoc(doc(db, "users", id));
-                       showCustomAlert('使用者資料已刪除。');
-                    } catch(error) {
-                        showCustomAlert("刪除使用者資料失敗。");
-                    } finally { hideLoader(); }
-                }
-            } else if (classList.contains('edit-user-btn')) {
-                const userDoc = await getDoc(doc(db, "users", id));
-                if (userDoc.exists()) {
-                    const userData = userDoc.data();
-                    userForm.reset();
-                    populateDynamicFieldsInModal();
-                    
-                    document.getElementById('user-id').value = id;
-                    userModalTitle.textContent = '編輯帳號';
-                    passwordModalInput.placeholder = "留空則不修改";
-                    passwordModalInput.required = false;
-                    usernameModalInput.value = userData.username || '';
-                    usernameModalInput.disabled = true;
-
-                    document.getElementById('employee-id').value = userData.employeeId || '';
-                    fullNameInput.value = userData.fullName || '';
-                    document.getElementById('phone-number').value = userData.phoneNumber || '';
-                    document.getElementById('address').value = userData.address || '';
-                    document.getElementById('id-card-number').value = userData.idCardNumber || '';
-                    document.getElementById('dob').value = userData.dob || '';
-                    document.getElementById('gender').value = userData.gender || '未指定';
-                    document.getElementById('user-role').value = userData.role || 'staff';
-                    document.getElementById('job-title').value = userData.jobTitle || '';
-                    document.getElementById('status').value = userData.status || '在職';
-                    document.getElementById('remarks').value = userData.remarks || '';
-                    profilePicPreview.src = userData.profilePic || generateAvatar(userData.fullName);
-
-                    const certs = userData.certifications || [];
-                    document.querySelectorAll('#certifications-checkboxes input').forEach(cb => {
-                        cb.checked = certs.includes(cb.value);
-                    });
-                    
-                    userModal.classList.remove('hidden');
-                }
-            }
-        });
+    cancelUserModalBtn.addEventListener('click', () => {
+        fullNameInput.removeEventListener('input', nameInputHandler);
+        userModal.classList.add('hidden');
     });
     
+    profilePicInput.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => profilePicPreview.src = e.target.result;
+            reader.readAsDataURL(file);
+        }
+    });
+
+    userForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        showLoader();
+        
+        const userId = document.getElementById('user-id').value;
+        const username = usernameModalInput.value;
+        const password = passwordModalInput.value;
+        const profilePicFile = profilePicInput.files[0];
+
+        try {
+            let authUserId = userId;
+            let originalProfilePicURL = '';
+
+            if (userId) {
+                const userDocSnap = await getDoc(doc(db, 'users', userId));
+                if (userDocSnap.exists()) {
+                    originalProfilePicURL = userDocSnap.data().profilePic || '';
+                }
+            }
+
+            if (!authUserId) {
+                if (!password || password.length < 6) throw new Error('新增使用者時，密碼為必填且長度至少6位。');
+                const email = `${username}@qrsystem.app`;
+                const signInMethods = await fetchSignInMethodsForEmail(auth, email);
+                if (signInMethods.length > 0) throw new Error('錯誤：此登入帳號已被使用。');
+
+                const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+                authUserId = userCredential.user.uid;
+            }
+            
+            let finalProfilePicURL = originalProfilePicURL;
+            if (profilePicFile) {
+                const storageRef = ref(storage, `profile_pictures/${authUserId}`);
+                const snapshot = await uploadBytes(storageRef, profilePicFile);
+                finalProfilePicURL = await getDownloadURL(snapshot.ref);
+            }
+            
+            const selectedCerts = Array.from(document.querySelectorAll('#certifications-checkboxes input:checked')).map(cb => cb.value);
+            const userData = {
+                username,
+                role: document.getElementById('user-role').value,
+                employeeId: document.getElementById('employee-id').value,
+                fullName: document.getElementById('full-name').value,
+                phoneNumber: document.getElementById('phone-number').value,
+                address: document.getElementById('address').value,
+                idCardNumber: document.getElementById('id-card-number').value,
+                dob: document.getElementById('dob').value,
+                gender: document.getElementById('gender').value,
+                jobTitle: document.getElementById('job-title').value,
+                status: document.getElementById('status').value,
+                remarks: document.getElementById('remarks').value,
+                certifications: selectedCerts,
+                profilePic: finalProfilePicURL
+            };
+
+            await setDoc(doc(db, 'users', authUserId), userData, { merge: true });
+            showCustomAlert(`使用者 ${userId ? '更新' : '建立'} 成功！`);
+            fullNameInput.removeEventListener('input', nameInputHandler);
+            userModal.classList.add('hidden');
+        } catch (error) {
+            console.error("Error saving user:", error);
+            showCustomAlert(`儲存失敗： ${error.message}`);
+        } finally {
+            hideLoader();
+        }
+    });
+
+    usersListTbody.addEventListener('click', async (e) => {
+        const { classList, dataset } = e.target;
+        const { id, username } = dataset;
+        
+        if (classList.contains('delete-user-btn')) {
+            if (await showCustomConfirm(`您確定要刪除帳號 ${username} 嗎？此操作無法復原。`)) {
+                showLoader();
+                try {
+                   await deleteDoc(doc(db, "users", id));
+                   showCustomAlert('使用者資料已刪除。');
+                } catch(error) {
+                    showCustomAlert("刪除使用者資料失敗。");
+                } finally { hideLoader(); }
+            }
+        } else if (classList.contains('edit-user-btn')) {
+            const userDoc = await getDoc(doc(db, "users", id));
+            if (userDoc.exists()) {
+                const userData = userDoc.data();
+                userForm.reset();
+                populateDynamicFieldsInModal();
+                
+                document.getElementById('user-id').value = id;
+                userModalTitle.textContent = '編輯帳號';
+                passwordModalInput.placeholder = "留空則不修改";
+                passwordModalInput.required = false;
+                usernameModalInput.value = userData.username || '';
+                usernameModalInput.disabled = true;
+
+                document.getElementById('employee-id').value = userData.employeeId || '';
+                fullNameInput.value = userData.fullName || '';
+                document.getElementById('phone-number').value = userData.phoneNumber || '';
+                document.getElementById('address').value = userData.address || '';
+                document.getElementById('id-card-number').value = userData.idCardNumber || '';
+                document.getElementById('dob').value = userData.dob || '';
+                document.getElementById('gender').value = userData.gender || '未指定';
+                document.getElementById('user-role').value = userData.role || 'staff';
+                document.getElementById('job-title').value = userData.jobTitle || '';
+                document.getElementById('status').value = userData.status || '在職';
+                document.getElementById('remarks').value = userData.remarks || '';
+                profilePicPreview.src = userData.profilePic || generateAvatar(userData.fullName);
+
+                const certs = userData.certifications || [];
+                document.querySelectorAll('#certifications-checkboxes input').forEach(cb => {
+                    cb.checked = certs.includes(cb.value);
+                });
+                
+                userModal.classList.remove('hidden');
+            }
+        }
+    });
+    
+    // Initial data load
     const unsubUsers = listenToUsers();
     const unsubLogs = listenToLoginLogs();
 

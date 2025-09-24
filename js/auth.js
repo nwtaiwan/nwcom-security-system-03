@@ -39,6 +39,7 @@ const navItems = {
 
 async function handleLogout() {
     showLoader();
+    // First, stop all active data listeners to prevent permission errors after sign-out.
     clearAllListeners();
     unsubscribeSession();
     unsubscribeSystemSettings();
@@ -65,9 +66,10 @@ async function handleLogout() {
 
 function handleAuthStateChange(router, closeSidebar) {
     onAuthStateChanged(auth, async (user) => {
-        clearAllListeners();
+        // Clear all global and page-specific listeners on any auth state change
         unsubscribeSystemSettings();
         unsubscribeSession();
+        clearAllListeners();
 
         const appContainer = document.getElementById('app');
         if (user && user.email) {
@@ -77,23 +79,13 @@ function handleAuthStateChange(router, closeSidebar) {
             if (userSnap.exists()) {
                 currentUser = { uid: user.uid, ...userSnap.data() };
 
-                const localSessionId = localStorage.getItem('loginSessionId');
-                unsubscribeSession = onSnapshot(userRef, (userDoc) => {
-                    if (userDoc.exists()) {
-                        const remoteSessionId = userDoc.data().loginSessionId;
-                        if (localSessionId && remoteSessionId && localSessionId !== remoteSessionId) {
-                            unsubscribeSession();
-                            showCustomAlert('您的帳號已在另一台裝置登入，此裝置將自動登出。', '強制登出');
-                            handleLogout();
-                        }
-                    }
-                });
-                
+                // Load main layout first
                 if (!document.getElementById('main-view')) {
                     const response = await fetch('pages/main_layout.html');
                     appContainer.innerHTML = await response.text();
                 }
                 
+                // Now that main_layout is in the DOM, we can safely find its elements
                 const userDisplay = document.getElementById('user-display');
                 const navContainer = document.getElementById('main-nav');
                 const logoutBtn = document.getElementById('logout-btn');
@@ -108,7 +100,11 @@ function handleAuthStateChange(router, closeSidebar) {
                         const item = navItems[key];
                         return `<a href="${item.href}" class="nav-btn font-semibold p-3 rounded-lg flex items-center justify-center">${item.icon}<span>${item.text}</span></a>`;
                     }).join('');
-
+                }
+                
+                if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
+                if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
+                if (navContainer) {
                     navContainer.addEventListener('click', (e) => {
                         if (e.target.closest('.nav-btn')) {
                             if (window.innerWidth < 768) {
@@ -118,28 +114,38 @@ function handleAuthStateChange(router, closeSidebar) {
                     });
                 }
                 
-                if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
-                if(sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
-                
+                // Start session listener for single-device enforcement AFTER UI is set up
+                const localSessionId = localStorage.getItem('loginSessionId');
+                unsubscribeSession = onSnapshot(userRef, (userDoc) => {
+                    if (userDoc.exists()) {
+                        const remoteSessionId = userDoc.data().loginSessionId;
+                        if (localSessionId && remoteSessionId && localSessionId !== remoteSessionId) {
+                            unsubscribeSession();
+                            showCustomAlert('您的帳號已在另一台裝置登入，此裝置將自動登出。', '強制登出');
+                            handleLogout();
+                        }
+                    }
+                });
+
                 unsubscribeSystemSettings = listenToSystemSettings();
                 
-                // Set default page to dashboard after login
-                if (!window.location.hash || window.location.hash === "#") {
+                // Set default page to dashboard after login if no hash is present
+                if (!window.location.hash || window.location.hash === '#') {
                     window.location.hash = '#dashboard';
+                } else {
+                    // Trigger router if already on a page (e.g. after a refresh)
+                    await router();
                 }
-                
-                await router();
 
             } else {
                 await handleLogout();
             }
         } else {
             currentUser = null;
-            await router(); 
+            await router(); // This will load the login page
             setupLoginForm();
         }
     });
 }
 
-export { handleAuthStateChange, currentUser, roleMap };
-
+export { handleAuthStateChange, currentUser };
