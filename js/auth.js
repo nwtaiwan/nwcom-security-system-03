@@ -8,7 +8,6 @@ import { listenToSystemSettings } from "./settings.js";
 let currentUser = null;
 let unsubscribeSystemSettings = () => {};
 let unsubscribeSession = () => {};
-let pageUnsubscribers = []; // Centralized array for page listeners
 
 const roleMap = {
     'system_admin': '系統管理員',
@@ -16,11 +15,6 @@ const roleMap = {
     'junior_manager': '初階主管',
     'staff': '勤務人員'
 };
-
-function clearPageListeners() {
-    pageUnsubscribers.forEach(unsub => unsub());
-    pageUnsubscribers = [];
-}
 
 async function handleLogout() {
     showLoader();
@@ -46,9 +40,9 @@ async function handleLogout() {
 
 function handleAuthStateChange(router, closeSidebar) {
     onAuthStateChanged(auth, async (user) => {
+        // Stop listening to global listeners when auth state changes.
         unsubscribeSystemSettings();
         unsubscribeSession();
-        clearPageListeners();
 
         const appContainer = document.getElementById('app');
         if (user && user.email) {
@@ -58,6 +52,7 @@ function handleAuthStateChange(router, closeSidebar) {
             if (userSnap.exists()) {
                 currentUser = { uid: user.uid, ...userSnap.data() };
 
+                // Start session listener for single-device enforcement
                 const localSessionId = localStorage.getItem('loginSessionId');
                 unsubscribeSession = onSnapshot(userRef, (userDoc) => {
                     if (userDoc.exists()) {
@@ -93,13 +88,15 @@ function handleAuthStateChange(router, closeSidebar) {
                 
                 unsubscribeSystemSettings = listenToSystemSettings();
                 
-                pageUnsubscribers = await router();
+                // Just call the router. It will handle its own listeners.
+                await router();
 
             } else {
                 await handleLogout();
             }
         } else {
             currentUser = null;
+            // The router will handle showing the login page.
             await router(); 
             setupLoginForm();
         }
@@ -107,4 +104,3 @@ function handleAuthStateChange(router, closeSidebar) {
 }
 
 export { handleAuthStateChange, currentUser };
-

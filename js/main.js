@@ -41,7 +41,6 @@ async function router() {
         try {
             const response = await fetch('pages/login.html');
             app.innerHTML = await response.text();
-            // No listeners to return for login page
         } catch (e) {
             app.innerHTML = `<p class="text-center text-red-500">無法載入登入頁面。</p>`;
         }
@@ -88,7 +87,7 @@ async function router() {
     }
 }
 
-// When the hash changes, just call the router.
+// When the hash changes, we need to re-run the router which also clears old listeners
 window.addEventListener('hashchange', router);
 
 // On initial load, the auth handler will call the router for the first time.
