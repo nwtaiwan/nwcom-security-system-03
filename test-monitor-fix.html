@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系統監控修復測試</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2em;
+            font-weight: 300;
+        }
+        .content {
+            padding: 30px;
+        }
+        .test-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid #FF6B6B;
+        }
+        .test-section h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+            font-size: 1.2em;
+        }
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-primary {
+            background: #FF6B6B;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #FF5252;
+            transform: translateY(-1px);
+        }
+        .btn-success {
+            background: #4ECDC4;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #45B7B8;
+            transform: translateY(-1px);
+        }
+        .console-output {
+            background: #2d3748;
+            border-radius: 8px;
+            padding: 20px;
+            color: #e2e8f0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+            height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-success { background-color: #4ECDC4; }
+        .status-error { background-color: #FF6B6B; }
+        .status-warning { background-color: #FFA726; }
+        .test-results {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .result-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 6px;
+            background: #f8f9fa;
+        }
+        .result-item:last-child {
+            margin-bottom: 0;
+        }
+        .summary-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .summary-box h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.3em;
+        }
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .stat-item {
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            display: block;
+        }
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 系統監控修復測試</h1>
+            <p>驗證系統監控模組的logger引用錯誤修復</p>
+        </div>
+        
+        <div class="content">
+            <!-- 測試控制 -->
+            <div class="test-section">
+                <h3>🎮 測試控制</h3>
+                <div class="controls">
+                    <button class="btn btn-primary" onclick="runAllTests()">🚀 運行所有測試</button>
+                    <button class="btn btn-success" onclick="clearConsole()">🗑️ 清除控制台</button>
+                    <button class="btn btn-success" onclick="testLoggerFix()">🔍 測試Logger修復</button>
+                    <button class="btn btn-primary" onclick="showErrorExamples()">📋 顯示錯誤示例</button>
+                </div>
+            </div>
+
+            <!-- 測試結果摘要 -->
+            <div id="test-summary" class="summary-box" style="display: none;">
+                <h3>📊 測試結果</h3>
+                <div class="summary-stats">
+                    <div class="stat-item">
+                        <span class="stat-value" id="total-tests">0</span>
+                        <span class="stat-label">總測試數</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="passed-tests">0</span>
+                        <span class="stat-label">通過數</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="failed-tests">0</span>
+                        <span class="stat-label">失敗數</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="success-rate">0%</span>
+                        <span class="stat-label">成功率</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 詳細結果 -->
+            <div class="test-results" id="detailed-results" style="display: none;">
+                <h3>📋 詳細測試結果</h3>
+                <div id="results-container"></div>
+            </div>
+
+            <!-- 控制台輸出 -->
+            <div class="test-section">
+                <h3>🖥️ 控制台輸出</h3>
+                <div class="console-output" id="console-output">
+                    等待測試開始...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // 導入測試腳本
+        import { SystemMonitorFixTest } from './test-system-monitor-fix.js';
+        
+        let tester = null;
+        let originalConsoleLog = null;
+        let originalConsoleError = null;
+        let originalConsoleWarn = null;
+
+        // 重定向控制台輸出到頁面
+        function redirectConsoleOutput() {
+            const consoleOutput = document.getElementById('console-output');
+            
+            // 保存原始控制台函數
+            originalConsoleLog = console.log;
+            originalConsoleError = console.error;
+            originalConsoleWarn = console.warn;
+
+            // 重定向輸出
+            console.log = function(...args) {
+                originalConsoleLog.apply(console, args);
+                const message = args.map(arg => 
+                    typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+                ).join(' ');
+                consoleOutput.textContent += message + '\n';
+                consoleOutput.scrollTop = consoleOutput.scrollHeight;
+            };
+
+            console.error = function(...args) {
+                originalConsoleError.apply(console, args);
+                const message = args.map(arg => 
+                    typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+                ).join(' ');
+                consoleOutput.textContent += `[ERROR] ${message}\n`;
+                consoleOutput.scrollTop = consoleOutput.scrollHeight;
+            };
+
+            console.warn = function(...args) {
+                originalConsoleWarn.apply(console, args);
+                const message = args.map(arg => 
+                    typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+                ).join(' ');
+                consoleOutput.textContent += `[WARN] ${message}\n`;
+                consoleOutput.scrollTop = consoleOutput.scrollHeight;
+            };
+        }
+
+        // 恢復原始控制台函數
+        function restoreConsoleOutput() {
+            if (originalConsoleLog) console.log = originalConsoleLog;
+            if (originalConsoleError) console.error = originalConsoleError;
+            if (originalConsoleWarn) console.warn = originalConsoleWarn;
+        }
+
+        // 顯示測試結果
+        function displayTestResults(results, errors) {
+            const summaryDiv = document.getElementById('test-summary');
+            const resultsDiv = document.getElementById('detailed-results');
+            const resultsContainer = document.getElementById('results-container');
+            
+            const totalTests = results.length + errors.length;
+            const passedTests = results.length;
+            const failedTests = errors.length;
+            const successRate = totalTests > 0 ? ((passedTests / totalTests) * 100).toFixed(1) : 0;
+            
+            // 更新摘要
+            document.getElementById('total-tests').textContent = totalTests;
+            document.getElementById('passed-tests').textContent = passedTests;
+            document.getElementById('failed-tests').textContent = failedTests;
+            document.getElementById('success-rate').textContent = successRate + '%';
+            
+            // 更新詳細結果
+            resultsContainer.innerHTML = '';
+            
+            // 顯示通過的測試
+            results.forEach(result => {
+                const resultItem = document.createElement('div');
+                resultItem.className = 'result-item';
+                resultItem.innerHTML = `
+                    <span class="status-indicator status-success"></span>
+                    <span>${result}</span>
+                `;
+                resultsContainer.appendChild(resultItem);
+            });
+            
+            // 顯示失敗的測試
+            errors.forEach(error => {
+                const resultItem = document.createElement('div');
+                resultItem.className = 'result-item';
+                resultItem.innerHTML = `
+                    <span class="status-indicator status-error"></span>
+                    <span>${error}</span>
+                `;
+                resultsContainer.appendChild(resultItem);
+            });
+            
+            // 顯示結果區域
+            summaryDiv.style.display = 'block';
+            resultsDiv.style.display = 'block';
+            
+            // 根據成功率改變摘要框顏色
+            if (successRate >= 80) {
+                summaryDiv.style.background = 'linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%)';
+            } else if (successRate >= 60) {
+                summaryDiv.style.background = 'linear-gradient(135deg, #FFA726 0%, #FF7043 100%)';
+            } else {
+                summaryDiv.style.background = 'linear-gradient(135deg, #FF6B6B 0%, #C44569 100%)';
+            }
+        }
+
+        // 運行所有測試
+        window.runAllTests = async function() {
+            const consoleOutput = document.getElementById('console-output');
+            consoleOutput.textContent = '🚀 開始系統監控修復測試...\n\n';
+            
+            try {
+                if (!tester) {
+                    tester = new SystemMonitorFixTest();
+                }
+                
+                // 重定向控制台輸出
+                redirectConsoleOutput();
+                
+                // 運行測試
+                await tester.runAllTests();
+                
+                // 顯示結果
+                displayTestResults(tester.results, tester.errors);
+                
+                // 恢復控制台
+                restoreConsoleOutput();
+                
+            } catch (error) {
+                console.error('測試執行錯誤:', error);
+                restoreConsoleOutput();
+            }
+        };
+
+        // 測試Logger修復
+        window.testLoggerFix = function() {
+            const consoleOutput = document.getElementById('console-output');
+            consoleOutput.textContent = '🔍 測試Logger引用修復...\n\n';
+            
+            try {
+                if (!tester) {
+                    tester = new SystemMonitorFixTest();
+                }
+                
+                redirectConsoleOutput();
+                
+                const result = tester.testLoggerReferences();
+                
+                restoreConsoleOutput();
+                
+                if (result) {
+                    displayTestResults(['Logger修復測試通過'], []);
+                } else {
+                    displayTestResults([], ['Logger修復測試失敗']);
+                }
+                
+            } catch (error) {
+                console.error('Logger修復測試錯誤:', error);
+                restoreConsoleOutput();
+                displayTestResults([], [`Logger修復測試錯誤: ${error.message}`]);
+            }
+        };
+
+        // 顯示錯誤示例
+        window.showErrorExamples = function() {
+            const consoleOutput = document.getElementById('console-output');
+            consoleOutput.textContent = '📋 常見Logger引用錯誤示例:\n\n';
+            
+            const examples = [
+                '❌ 錯誤用法: systemLogger.info("消息")',
+                '✅ 正確用法: this.logger.info("消息")',
+                '',
+                '❌ 錯誤用法: systemLogger.error("錯誤", error)',
+                '✅ 正確用法: this.logger.error("錯誤", error)',
+                '',
+                '❌ 錯誤用法: systemLogger.warn("警告")',
+                '✅ 正確用法: this.logger.warn("警告")',
+                '',
+                '❌ 錯誤用法: systemLogger.debug("調試信息")',
+                '✅ 正確用法: this.logger.debug("調試信息")',
+                '',
+                '❌ 錯誤用法: systemLogger.getLogs()',
+                '✅ 正確用法: this.logger.getLogs()',
+                '',
+                '❌ 錯誤用法: systemLogger.onLogAdded(callback)',
+                '✅ 正確用法: this.logger.onLogAdded(callback)',
+                '',
+                '📝 修復要點:',
+                '1. 將所有 systemLogger 替換為 this.logger',
+                '2. 確保在類別方法中使用 this.logger',
+                '3. 不要在靜態方法中使用 this.logger',
+                '4. 確保 logger 在構造函數中正確初始化'
+            ];
+            
+            consoleOutput.textContent += examples.join('\n');
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        };
+
+        // 清除控制台
+        window.clearConsole = function() {
+            document.getElementById('console-output').textContent = '控制台已清除。\n';
+        };
+
+        // 頁面載入完成後初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('系統監控修復測試頁面載入完成');
+        });
+    </script>
+</body>
+</html>
