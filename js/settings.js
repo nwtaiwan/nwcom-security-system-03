@@ -2,46 +2,47 @@ import { db } from './firebase.js';
 import { doc, onSnapshot, setDoc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { showCustomAlert, showCustomConfirm, showLoader, hideLoader } from './utils.js';
 
-// This variable will be exported to be used by other modules
 let systemSettings = { roles: [], jobTitles: [], certifications: [], areas: [] };
 let settingsPromiseResolver;
 const settingsPromise = new Promise(resolve => {
     settingsPromiseResolver = resolve;
 });
 
-
 const settingsConfig = {
-    roles: { listElId: 'roles-list', addBtnId: 'add-role-btn', name: '角色' },
+    roles: { listElId: 'roles-list', name: '角色' },
     jobTitles: { listElId: 'job-titles-list', addBtnId: 'add-job-title-btn', name: '職稱' },
     certifications: { listElId: 'certifications-list', addBtnId: 'add-certification-btn', name: '專業證照' },
     areas: { listElId: 'areas-list', addBtnId: 'add-area-btn', name: '區域' }
 };
 
-// Renders the lists on the settings page based on the current systemSettings variable.
 function renderAllSettingsLists() {
     Object.keys(settingsConfig).forEach(category => {
         const config = settingsConfig[category];
         const listEl = document.getElementById(config.listElId);
-        if (!listEl) return; // Only render if the element exists on the current page
+        if (!listEl) return;
 
         const items = systemSettings[category] || [];
         listEl.innerHTML = '';
         items.forEach(item => {
             const li = document.createElement('li');
             li.className = 'flex justify-between items-center bg-white p-2 rounded shadow-xs';
-            li.innerHTML = `
-                <span class="text-sm">${item}</span>
-                <div>
-                    <button data-category="${category}" data-value="${item}" class="edit-setting-btn text-blue-500 hover:text-blue-700 text-xs mr-2">修改</button>
-                    <button data-category="${category}" data-value="${item}" class="delete-setting-btn text-red-500 hover:text-red-700 text-xs">刪除</button>
-                </div>
-            `;
+            
+            if (category === 'roles') {
+                 li.innerHTML = `<span class="text-sm">${item}</span>`;
+            } else {
+                 li.innerHTML = `
+                    <span class="text-sm">${item}</span>
+                    <div>
+                        <button data-category="${category}" data-value="${item}" class="edit-setting-btn text-blue-500 hover:text-blue-700 text-xs mr-2">修改</button>
+                        <button data-category="${category}" data-value="${item}" class="delete-setting-btn text-red-500 hover:text-red-700 text-xs">刪除</button>
+                    </div>
+                `;
+            }
             listEl.appendChild(li);
         });
     });
 }
 
-// This listener runs in the background, keeping the systemSettings variable up-to-date.
 function listenToSystemSettings() {
     const settingsRef = doc(db, "system_settings", "account_config");
     return onSnapshot(settingsRef, 
@@ -49,7 +50,6 @@ function listenToSystemSettings() {
             if (docSnap.exists()) {
                 systemSettings = docSnap.data();
             } else {
-                // If the settings document doesn't exist, create it with default values.
                 const defaultSettings = {
                     roles: ['系統管理員', '高階主管', '初階主管', '勤務人員'],
                     jobTitles: ['日班保全', '日機保全', '夜班保全', '夜機保全', '行政祕書', '財務秘書', '吧檯秘書', '總幹事', '副總幹事', '督導', '課長', '襄理', '經理', '處長', '協理', '特助'],
@@ -64,12 +64,10 @@ function listenToSystemSettings() {
                     showCustomAlert("建立預設系統設定失敗。");
                 }
             }
-            // Resolve the promise the first time settings are loaded
             if (settingsPromiseResolver) {
                 settingsPromiseResolver();
                 settingsPromiseResolver = null; 
             }
-            // Use a custom event to notify other parts of the app that settings have updated.
             window.dispatchEvent(new Event('settingsUpdated'));
         },
         (error) => {
@@ -79,17 +77,14 @@ function listenToSystemSettings() {
     );
 }
 
-// This function is called ONLY when the settings page is loaded by the router.
 async function initSettingsPage() {
-    // Wait for the initial settings to be loaded before rendering
     await settingsPromise;
     renderAllSettingsLists();
-
-    // Listen for the custom event to re-render if settings are updated in the background.
     window.addEventListener('settingsUpdated', renderAllSettingsLists);
 
-    // Set up event listeners for all buttons and lists on the page.
     Object.entries(settingsConfig).forEach(([category, config]) => {
+        if(category === 'roles') return;
+
         const addBtn = document.getElementById(config.addBtnId);
         const listEl = document.getElementById(config.listElId);
 
@@ -136,7 +131,7 @@ async function initSettingsPage() {
         }
     });
     
-    // Set up sub-tab logic
+    // Sub-tab logic
     const subTabAccountSettingsBtn = document.getElementById('sub-tab-account-settings');
     const subTabCommunitySettingsBtn = document.getElementById('sub-tab-community-settings');
     const accountSettingsContent = document.getElementById('account-settings-content');
@@ -159,11 +154,10 @@ async function initSettingsPage() {
     subTabAccountSettingsBtn.addEventListener('click', () => switchSettingsTab('account'));
     subTabCommunitySettingsBtn.addEventListener('click', () => switchSettingsTab('community'));
     
-    // Default to the account settings tab
     switchSettingsTab('account');
 
-    // This page's main listener is global, so no page-specific listeners to return for cleanup
-    return []; 
+    return [];
 }
 
 export { initSettingsPage, listenToSystemSettings, systemSettings, settingsPromise };
+

@@ -27,16 +27,23 @@ function closeSidebar() {
 }
 
 async function router() {
-    // This router now ASSUMES main_layout.html is already loaded.
     // 1. Always clear listeners from the previous page
     clearAllListeners();
 
+    const mainLayout = document.getElementById('main-view');
+    if (!mainLayout) {
+        try {
+            const response = await fetch('pages/login.html');
+            app.innerHTML = await response.text();
+        } catch (e) {
+            app.innerHTML = `<p class="text-center text-red-500">無法載入登入頁面。</p>`;
+        }
+        return;
+    }
+    
     const page = window.location.hash.substring(1) || 'users';
     const mainContentArea = document.getElementById('main-content');
-    if (!mainContentArea) {
-        console.error("Router called but main-content area not found.");
-        return; 
-    }
+    if (!mainContentArea) return;
 
     try {
         const response = await fetch(`pages/${page}.html`);
@@ -74,10 +81,8 @@ async function router() {
     }
 }
 
-// When the hash changes, we just re-run the router.
 window.addEventListener('hashchange', router);
 
-// On initial load, the auth handler will call the router for the first time.
 document.addEventListener('DOMContentLoaded', () => {
     handleAuthStateChange(router, closeSidebar);
 });

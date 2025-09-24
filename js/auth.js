@@ -17,6 +17,26 @@ const roleMap = {
     'staff': '勤務人員'
 };
 
+const navConfig = {
+    system_admin: ['dashboard', 'users', 'community', 'schedule', 'leave', 'records', 'tasks', 'reports', 'location', 'settings'],
+    senior_manager: ['dashboard', 'community', 'schedule', 'leave', 'records', 'tasks', 'reports', 'location'],
+    junior_manager: ['dashboard', 'schedule', 'leave', 'records', 'tasks', 'reports', 'location'],
+    staff: ['dashboard', 'leave', 'location']
+};
+
+const navItems = {
+    dashboard: { href: '#dashboard', text: '儀表板', icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" /></svg>` },
+    users: { href: '#users', text: '帳號管理', icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" /></svg>` },
+    community: { href: '#community', text: '社區管理', icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor"><path d="M8 2a1 1 0 00-1 1v1H5a1 1 0 00-1 1v12a1 1 0 001 1h10a1 1 0 001-1V5a1 1 0 00-1-1h-2V3a1 1 0 00-1-1H8zM7 8a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1zm0 4a1 1 0 112 0v2a1 1 0 11-2 0v-2z" /></svg>` },
+    schedule: { href: '#schedule', text: '勤務排班', icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" /></svg>` },
+    leave: { href: '#leave', text: '休假管理', icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.414-1.415L11 9.586V6z" clip-rule="evenodd" /></svg>` },
+    records: { href: '#records', text: '獎懲登錄', icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" /><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" /></svg>` },
+    tasks: { href: '#tasks', text: '任務指派', icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z" /><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" /></svg>` },
+    reports: { href: '#reports', text: '數據報告', icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1H9a1 1 0 01-1-1V4zM14 8a1 1 0 011-1h2a1 1 0 011 1v8a1 1 0 01-1 1h-2a1 1 0 01-1-1V8z" /></svg>` },
+    location: { href: '#location', text: '定位打卡', icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 21l-4.95-6.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" /></svg>` },
+    settings: { href: '#settings', text: '系統設定', icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.532 1.532 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.532 1.532 0 01-.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" /></svg>` },
+};
+
 async function handleLogout() {
     showLoader();
     try {
@@ -41,7 +61,6 @@ async function handleLogout() {
 
 function handleAuthStateChange(router, closeSidebar) {
     onAuthStateChanged(auth, async (user) => {
-        // Clear all global and page-specific listeners on any auth state change
         unsubscribeSystemSettings();
         unsubscribeSession();
         clearAllListeners();
@@ -54,7 +73,6 @@ function handleAuthStateChange(router, closeSidebar) {
             if (userSnap.exists()) {
                 currentUser = { uid: user.uid, ...userSnap.data() };
 
-                // Start session listener for single-device enforcement
                 const localSessionId = localStorage.getItem('loginSessionId');
                 unsubscribeSession = onSnapshot(userRef, (userDoc) => {
                     if (userDoc.exists()) {
@@ -67,49 +85,44 @@ function handleAuthStateChange(router, closeSidebar) {
                     }
                 });
                 
-                // 1. Load the main application layout
-                const response = await fetch('pages/main_layout.html');
-                appContainer.innerHTML = await response.text();
+                if (!document.getElementById('main-view')) {
+                    const response = await fetch('pages/main_layout.html');
+                    appContainer.innerHTML = await response.text();
+                }
 
-                // 2. Setup layout elements
-                document.getElementById('user-display').textContent = `${currentUser.fullName || currentUser.username} (${roleMap[currentUser.role] || currentUser.role})`;
+                // Render Nav based on role
+                const navContainer = document.getElementById('main-nav');
+                const userRole = currentUser.role || 'staff';
+                const allowedNavs = navConfig[userRole] || [];
+                navContainer.innerHTML = allowedNavs.map(key => {
+                    const item = navItems[key];
+                    return `<a href="${item.href}" class="nav-btn font-semibold p-3 rounded-lg flex items-center justify-center">${item.icon}<span>${item.text}</span></a>`;
+                }).join('');
+
+                document.getElementById('user-display').textContent = `${currentUser.fullName || currentUser.username} (${roleMap[userRole]})`;
                 document.getElementById('logout-btn').addEventListener('click', handleLogout);
                 
                 const sidebarOverlay = document.getElementById('sidebar-overlay');
-                if(sidebarOverlay) {
-                    sidebarOverlay.addEventListener('click', closeSidebar);
-                }
+                if(sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
                 
                 document.querySelectorAll('.nav-btn').forEach(btn => {
                     btn.addEventListener('click', () => {
-                        if (window.innerWidth < 768) {
-                            closeSidebar();
-                        }
+                        if (window.innerWidth < 768) closeSidebar();
                     });
                 });
                 
-                // 3. Start global listeners
                 unsubscribeSystemSettings = listenToSystemSettings();
-                
-                // 4. Start the router to load the initial page content
                 await router();
 
             } else {
                 await handleLogout();
             }
         } else {
-            // User is signed out
             currentUser = null;
-            
-            // 1. Load the login page HTML
-            const response = await fetch('pages/login.html');
-            appContainer.innerHTML = await response.text();
-            
-            // 2. Setup the login form's JS
+            await router(); 
             setupLoginForm();
         }
     });
 }
 
 export { handleAuthStateChange, currentUser, roleMap };
-
