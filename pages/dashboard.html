@@ -5,6 +5,139 @@
         </button>
         <h1 class="text-xl font-bold text-gray-800">儀表板</h1>
      </div>
+     <div class="flex items-center space-x-4">
+         <button id="refresh-dashboard" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+             <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+             </svg>
+             刷新
+         </button>
+         <button id="export-report" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+             <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+             </svg>
+             匯出報告
+         </button>
+         <span id="last-updated" class="text-sm text-gray-500">最後更新: --:--:--</span>
+     </div>
 </header>
-<div class="text-center text-gray-500">此功能頁面待開發。</div>
+
+<!-- 統計卡片區域 -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- 用戶統計 -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-600">總用戶數</p>
+                <p id="total-users" class="text-3xl font-bold text-gray-900">0</p>
+            </div>
+            <div class="p-3 bg-blue-100 rounded-full">
+                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                </svg>
+            </div>
+        </div>
+        <div class="mt-4 flex items-center text-sm text-gray-500">
+            <span>活躍: <span id="active-users">0</span></span>
+            <span class="mx-2">|</span>
+            <span>在線: <span id="online-users">0</span></span>
+        </div>
+    </div>
+
+    <!-- 定位統計 -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-600">今日定位</p>
+                <p id="total-locations" class="text-3xl font-bold text-gray-900">0</p>
+            </div>
+            <div class="p-3 bg-green-100 rounded-full">
+                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- 勤務統計 -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-600">今日勤務</p>
+                <p id="total-schedules" class="text-3xl font-bold text-gray-900">0</p>
+            </div>
+            <div class="p-3 bg-yellow-100 rounded-full">
+                <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+        </div>
+        <div class="mt-4 flex items-center text-sm text-gray-500">
+            <span>完成: <span id="completed-schedules">0</span></span>
+            <span class="mx-2">|</span>
+            <span>待處理: <span id="pending-schedules">0</span></span>
+        </div>
+    </div>
+
+    <!-- 休假統計 -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-600">休假申請</p>
+                <p id="total-leaves" class="text-3xl font-bold text-gray-900">0</p>
+            </div>
+            <div class="p-3 bg-purple-100 rounded-full">
+                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+            </div>
+        </div>
+        <div class="mt-4 flex items-center text-sm text-gray-500">
+            <span>已批准: <span id="approved-leaves">0</span></span>
+            <span class="mx-2">|</span>
+            <span>待審核: <span id="pending-leaves">0</span></span>
+        </div>
+    </div>
+</div>
+
+<!-- 圖表區域 -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <!-- 用戶角色分佈圖 -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">用戶角色分佈</h3>
+        <canvas id="user-role-chart" width="400" height="300"></canvas>
+    </div>
+
+    <!-- 勤務狀態圖 -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">勤務狀態</h3>
+        <canvas id="schedule-status-chart" width="400" height="300"></canvas>
+    </div>
+
+    <!-- 休假類型分佈圖 -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">休假類型分佈</h3>
+        <canvas id="leave-type-chart" width="400" height="300"></canvas>
+    </div>
+
+    <!-- 系統狀態 -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">系統狀態</h3>
+        <div class="space-y-4">
+            <div class="flex justify-between items-center">
+                <span class="text-gray-600">系統運行時間</span>
+                <span id="system-uptime" class="font-semibold">計算中...</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-gray-600">平均回應時間</span>
+                <span id="response-time" class="font-semibold">計算中...</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-gray-600">錯誤率</span>
+                <span id="error-rate" class="font-semibold">計算中...</span>
+            </div>
+        </div>
+    </div>
+</div>
 

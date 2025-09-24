@@ -5,6 +5,9 @@ import { db, auth } from './firebase.js';
 import { setupLoginForm } from './login.js';
 import { listenToSystemSettings } from "./settings.js";
 import { clearAllListeners } from "./listeners.js";
+import { systemLogger, systemSecurity } from './system.js';
+import { notificationManager } from './notification.js';
+import { SYSTEM_CONFIG } from './config.js';
 
 let currentUser = null;
 let unsubscribeSystemSettings = () => {};
@@ -51,10 +54,21 @@ async function handleLogout() {
             await updateDoc(logDocRef, { logoutTimestamp: serverTimestamp() });
         }
         if (currentUser && currentUser.uid) {
+            systemLogger.info(`使用者 ${currentUser.email} 執行登出操作`);
+            
             await updateDoc(doc(db, 'users', currentUser.uid), { loginSessionId: null });
+            
+            // 發送登出通知
+            notificationManager.sendNotification(currentUser.uid, {
+                title: '登出成功',
+                body: '您已成功登出系統',
+                type: 'info'
+            });
         }
         await signOut(auth);
+        systemLogger.info('使用者成功登出系統');
     } catch (error) {
+        systemLogger.error(`登出錯誤: ${error.message}`);
         console.error("Error during logout process:", error);
         showCustomAlert('登出時發生錯誤，但仍會嘗試清除本機登入狀態。');
     } finally {
@@ -64,8 +78,8 @@ async function handleLogout() {
     }
 }
 
-function handleAuthStateChange(router, closeSidebar) {
-    onAuthStateChanged(auth, async (user) => {
+export function onAuthStateChange(callback) {
+    return onAuthStateChanged(auth, async (user) => {
         // Clear all global and page-specific listeners on any auth state change
         unsubscribeSystemSettings();
         unsubscribeSession();
@@ -136,15 +150,18 @@ function handleAuthStateChange(router, closeSidebar) {
                     window.location.hash = '#dashboard';
                 }
                 
-                await router();
+                await callback(user);
 
             } else {
                 await handleLogout();
             }
         } else {
+            if (currentUser) {
+                systemLogger.info(`使用者 ${currentUser.email} 已登出`);
+            }
             currentUser = null;
-            await router(); 
-            setupLoginForm();
+            clearAllListeners();
+            await callback(user);
         }
     });
 }
