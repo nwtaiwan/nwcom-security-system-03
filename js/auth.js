@@ -10,6 +10,13 @@ let unsubscribeSystemSettings = () => {};
 let unsubscribeSession = () => {};
 let pageUnsubscribers = []; // Centralized array for page listeners
 
+const roleMap = {
+    'system_admin': '系統管理員',
+    'senior_manager': '高階主管',
+    'junior_manager': '初階主管',
+    'staff': '勤務人員'
+};
+
 function clearPageListeners() {
     pageUnsubscribers.forEach(unsub => unsub());
     pageUnsubscribers = [];
@@ -39,7 +46,6 @@ async function handleLogout() {
 
 function handleAuthStateChange(router, closeSidebar) {
     onAuthStateChanged(auth, async (user) => {
-        // Clear all listeners on any auth state change
         unsubscribeSystemSettings();
         unsubscribeSession();
         clearPageListeners();
@@ -68,8 +74,10 @@ function handleAuthStateChange(router, closeSidebar) {
                     const response = await fetch('pages/main_layout.html');
                     appContainer.innerHTML = await response.text();
                 }
+
+                document.getElementById('user-display').textContent = `${currentUser.fullName || currentUser.username} (${roleMap[currentUser.role] || currentUser.role})`;
+                document.getElementById('logout-btn').addEventListener('click', handleLogout);
                 
-                // This logic needs to be inside the router or called after to ensure elements exist
                 const sidebarOverlay = document.getElementById('sidebar-overlay');
                 if(sidebarOverlay) {
                     sidebarOverlay.addEventListener('click', closeSidebar);
@@ -92,13 +100,11 @@ function handleAuthStateChange(router, closeSidebar) {
             }
         } else {
             currentUser = null;
-            // The router will handle showing the login page.
             await router(); 
             setupLoginForm();
         }
     });
 }
 
-// Only export the necessary functions and variables
 export { handleAuthStateChange, currentUser };
 
