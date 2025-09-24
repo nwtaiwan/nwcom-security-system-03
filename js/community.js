@@ -1,7 +1,7 @@
 import { db } from './firebase.js';
 import { doc, onSnapshot, setDoc, addDoc, deleteDoc, collection, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { showCustomAlert, showCustomConfirm, showLoader, hideLoader } from './utils.js';
-import { systemSettings } from './settings.js';
+import { systemSettings, settingsPromise } from './settings.js';
 
 let allCommunities = [];
 
@@ -79,7 +79,9 @@ function listenToCommunities() {
     });
 }
 
-function initCommunityPage() {
+async function initCommunityPage() {
+    await settingsPromise;
+
     const communityModal = document.getElementById('community-modal');
     const showAddCommunityModalBtn = document.getElementById('show-add-community-modal-btn');
     const cancelCommunityModalBtn = document.getElementById('cancel-community-modal-btn');
@@ -221,3 +223,4 @@ function initCommunityPage() {
 }
 
 export { initCommunityPage };
+

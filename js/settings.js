@@ -2,8 +2,12 @@ import { db } from './firebase.js';
 import { doc, onSnapshot, setDoc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { showCustomAlert, showCustomConfirm, showLoader, hideLoader } from './utils.js';
 
-// This variable will be exported to be used by other modules
 let systemSettings = { roles: [], jobTitles: [], certifications: [], areas: [] };
+let settingsPromiseResolver;
+const settingsPromise = new Promise(resolve => {
+    settingsPromiseResolver = resolve;
+});
+
 
 const settingsConfig = {
     roles: { listElId: 'roles-list', addBtnId: 'add-role-btn', name: '角色' },
@@ -12,12 +16,11 @@ const settingsConfig = {
     areas: { listElId: 'areas-list', addBtnId: 'add-area-btn', name: '區域' }
 };
 
-// Renders the lists on the settings page based on the current systemSettings variable.
 function renderAllSettingsLists() {
     Object.keys(settingsConfig).forEach(category => {
         const config = settingsConfig[category];
         const listEl = document.getElementById(config.listElId);
-        if (!listEl) return; // Only render if the element exists on the current page
+        if (!listEl) return;
 
         const items = systemSettings[category] || [];
         listEl.innerHTML = '';
@@ -36,7 +39,6 @@ function renderAllSettingsLists() {
     });
 }
 
-// This listener runs in the background, keeping the systemSettings variable up-to-date.
 function listenToSystemSettings() {
     const settingsRef = doc(db, "system_settings", "account_config");
     return onSnapshot(settingsRef, 
@@ -58,7 +60,10 @@ function listenToSystemSettings() {
                     showCustomAlert("建立預設系統設定失敗。");
                 }
             }
-            // Use a custom event to notify other parts of the app that settings have updated.
+            if (settingsPromiseResolver) {
+                settingsPromiseResolver();
+                settingsPromiseResolver = null; 
+            }
             window.dispatchEvent(new Event('settingsUpdated'));
         },
         (error) => {
@@ -68,11 +73,9 @@ function listenToSystemSettings() {
     );
 }
 
-// This function is called ONLY when the settings page is loaded by the router.
-function initSettingsPage() {
-    renderAllSettingsLists(); // Initial render
-
-    // Listen for the custom event to re-render if settings are updated in the background.
+async function initSettingsPage() {
+    await settingsPromise;
+    renderAllSettingsLists();
     window.addEventListener('settingsUpdated', renderAllSettingsLists);
 
     Object.entries(settingsConfig).forEach(([category, config]) => {
@@ -122,7 +125,6 @@ function initSettingsPage() {
         }
     });
     
-    // Sub-tab logic
     const subTabAccountSettingsBtn = document.getElementById('sub-tab-account-settings');
     const subTabCommunitySettingsBtn = document.getElementById('sub-tab-community-settings');
     const accountSettingsContent = document.getElementById('account-settings-content');
@@ -148,6 +150,4 @@ function initSettingsPage() {
     switchSettingsTab('account');
 }
 
-export { initSettingsPage, listenToSystemSettings, systemSettings };
-
-
+export { initSettingsPage, listenToSystemSettings, systemSettings, settingsPromise };

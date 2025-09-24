@@ -3,8 +3,11 @@ import { doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com
 import { showCustomAlert, showLoader, hideLoader } from './utils.js';
 import { db, auth } from './firebase.js';
 import { setupLoginForm } from './login.js';
+import { listenToSystemSettings } from "./settings.js";
 
 let currentUser = null;
+let unsubscribeSystemSettings = () => {};
+
 const roleMap = {
     'system_admin': '系統管理員',
     'senior_manager': '高階主管',
@@ -32,6 +35,8 @@ async function handleLogout() {
 
 function handleAuthStateChange(router, closeSidebar) {
     onAuthStateChanged(auth, async (user) => {
+        unsubscribeSystemSettings(); // Always clear previous listener on auth state change
+
         const appContainer = document.getElementById('app');
         if (user && user.email) {
             const userDoc = await getDoc(doc(db, 'users', user.uid));
@@ -58,14 +63,15 @@ function handleAuthStateChange(router, closeSidebar) {
                         }
                     });
                 });
+                
+                // Start listening to system settings once the user is authenticated
+                unsubscribeSystemSettings = listenToSystemSettings();
 
                 await router();
             } else {
-                // User exists in Auth, but not in Firestore. Log them out.
                 await handleLogout();
             }
         } else {
-            // User is signed out.
             currentUser = null;
             const response = await fetch('pages/login.html');
             appContainer.innerHTML = await response.text();
@@ -73,7 +79,6 @@ function handleAuthStateChange(router, closeSidebar) {
         }
     });
 }
-
 
 export { handleAuthStateChange, currentUser, roleMap };
 

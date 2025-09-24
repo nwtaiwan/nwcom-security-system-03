@@ -3,7 +3,7 @@ import { getDoc, doc, setDoc, collection, query, onSnapshot, deleteDoc, updateDo
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 import { createUserWithEmailAndPassword, fetchSignInMethodsForEmail } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { showCustomAlert, showCustomConfirm, showLoader, hideLoader, generateAvatar } from './utils.js';
-import { systemSettings } from './settings.js';
+import { systemSettings, settingsPromise } from './settings.js';
 
 let allUsers = [];
 
@@ -140,7 +140,9 @@ function listenToLoginLogs() {
      });
 }
 
-function initUsersPage() {
+async function initUsersPage() {
+    await settingsPromise;
+
     // DOM Elements
     const showAddUserModalBtn = document.getElementById('show-add-user-modal-btn');
     const userModal = document.getElementById('user-modal');
@@ -186,7 +188,6 @@ function initUsersPage() {
     subTabUserListBtn.addEventListener('click', () => switchUserManagementTab('userList'));
     subTabLoginHistoryBtn.addEventListener('click', () => switchUserManagementTab('loginHistory'));
     
-    // --- Populate Filters ---
     populateFilterDropdowns();
     window.addEventListener('settingsUpdated', populateFilterDropdowns);
 
