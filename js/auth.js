@@ -89,29 +89,41 @@ function handleAuthStateChange(router, closeSidebar) {
                     const response = await fetch('pages/main_layout.html');
                     appContainer.innerHTML = await response.text();
                 }
-
-                // Render Nav based on role
+                
+                const userDisplay = document.getElementById('user-display');
+                if (userDisplay) {
+                    const userRole = currentUser.role || 'staff';
+                    userDisplay.textContent = `${currentUser.fullName || currentUser.username} (${roleMap[userRole]})`;
+                }
+                
+                const logoutBtn = document.getElementById('logout-btn');
+                if (logoutBtn) {
+                    logoutBtn.addEventListener('click', handleLogout);
+                }
+                
                 const navContainer = document.getElementById('main-nav');
-                const userRole = currentUser.role || 'staff';
-                const allowedNavs = navConfig[userRole] || [];
-                navContainer.innerHTML = allowedNavs.map(key => {
-                    const item = navItems[key];
-                    return `<a href="${item.href}" class="nav-btn font-semibold p-3 rounded-lg flex items-center justify-center">${item.icon}<span>${item.text}</span></a>`;
-                }).join('');
-
-                document.getElementById('user-display').textContent = `${currentUser.fullName || currentUser.username} (${roleMap[userRole]})`;
-                document.getElementById('logout-btn').addEventListener('click', handleLogout);
+                if (navContainer) {
+                    const userRole = currentUser.role || 'staff';
+                    const allowedNavs = navConfig[userRole] || [];
+                    navContainer.innerHTML = allowedNavs.map(key => {
+                        const item = navItems[key];
+                        return `<a href="${item.href}" class="nav-btn font-semibold p-3 rounded-lg flex items-center justify-center">${item.icon}<span>${item.text}</span></a>`;
+                    }).join('');
+                }
                 
                 const sidebarOverlay = document.getElementById('sidebar-overlay');
                 if(sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
                 
                 document.querySelectorAll('.nav-btn').forEach(btn => {
                     btn.addEventListener('click', () => {
-                        if (window.innerWidth < 768) closeSidebar();
+                        if (window.innerWidth < 768) {
+                            closeSidebar();
+                        }
                     });
                 });
                 
                 unsubscribeSystemSettings = listenToSystemSettings();
+                
                 await router();
 
             } else {
