@@ -103,3 +103,4 @@ function handleAuthStateChange(router, closeSidebar) {
 }
 
 export { handleAuthStateChange, currentUser, roleMap };
+
