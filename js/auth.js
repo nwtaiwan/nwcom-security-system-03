@@ -8,13 +8,12 @@ import { listenToSystemSettings } from "./settings.js";
 let currentUser = null;
 let unsubscribeSystemSettings = () => {};
 let unsubscribeSession = () => {};
+let pageUnsubscribers = []; // Centralized array for page listeners
 
-const roleMap = {
-    'system_admin': '系統管理員',
-    'senior_manager': '高階主管',
-    'junior_manager': '初階主管',
-    'staff': '勤務人員'
-};
+function clearPageListeners() {
+    pageUnsubscribers.forEach(unsub => unsub());
+    pageUnsubscribers = [];
+}
 
 async function handleLogout() {
     showLoader();
@@ -40,9 +39,10 @@ async function handleLogout() {
 
 function handleAuthStateChange(router, closeSidebar) {
     onAuthStateChanged(auth, async (user) => {
-        // Stop listening to global listeners when auth state changes.
+        // Clear all listeners on any auth state change
         unsubscribeSystemSettings();
         unsubscribeSession();
+        clearPageListeners();
 
         const appContainer = document.getElementById('app');
         if (user && user.email) {
@@ -52,7 +52,6 @@ function handleAuthStateChange(router, closeSidebar) {
             if (userSnap.exists()) {
                 currentUser = { uid: user.uid, ...userSnap.data() };
 
-                // Start session listener for single-device enforcement
                 const localSessionId = localStorage.getItem('loginSessionId');
                 unsubscribeSession = onSnapshot(userRef, (userDoc) => {
                     if (userDoc.exists()) {
@@ -69,10 +68,8 @@ function handleAuthStateChange(router, closeSidebar) {
                     const response = await fetch('pages/main_layout.html');
                     appContainer.innerHTML = await response.text();
                 }
-
-                document.getElementById('user-display').textContent = `${currentUser.fullName || currentUser.username} (${roleMap[currentUser.role] || currentUser.role})`;
-                document.getElementById('logout-btn').addEventListener('click', handleLogout);
                 
+                // Moved user display logic inside the router to ensure elements exist
                 const sidebarOverlay = document.getElementById('sidebar-overlay');
                 if(sidebarOverlay) {
                     sidebarOverlay.addEventListener('click', closeSidebar);
@@ -88,8 +85,7 @@ function handleAuthStateChange(router, closeSidebar) {
                 
                 unsubscribeSystemSettings = listenToSystemSettings();
                 
-                // Just call the router. It will handle its own listeners.
-                await router();
+                pageUnsubscribers = await router();
 
             } else {
                 await handleLogout();
@@ -103,4 +99,5 @@ function handleAuthStateChange(router, closeSidebar) {
     });
 }
 
-export { handleAuthStateChange, currentUser, roleMap };
+// Only export the necessary functions and variables
+export { handleAuthStateChange, currentUser };
