@@ -85,7 +85,6 @@ function handleAuthStateChange(router, closeSidebar) {
                     appContainer.innerHTML = await response.text();
                 }
                 
-                // Now that main_layout is in the DOM, we can safely find its elements
                 const userDisplay = document.getElementById('user-display');
                 const navContainer = document.getElementById('main-nav');
                 const logoutBtn = document.getElementById('logout-btn');
@@ -103,10 +102,13 @@ function handleAuthStateChange(router, closeSidebar) {
                 }
                 
                 if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
-                if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
+                if(sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
+                
+                // Use event delegation on the nav container
                 if (navContainer) {
                     navContainer.addEventListener('click', (e) => {
-                        if (e.target.closest('.nav-btn')) {
+                        const navBtn = e.target.closest('.nav-btn');
+                        if (navBtn) {
                             if (window.innerWidth < 768) {
                                 closeSidebar();
                             }
@@ -114,7 +116,7 @@ function handleAuthStateChange(router, closeSidebar) {
                     });
                 }
                 
-                // Start session listener for single-device enforcement AFTER UI is set up
+                // Start session listener for single-device enforcement
                 const localSessionId = localStorage.getItem('loginSessionId');
                 unsubscribeSession = onSnapshot(userRef, (userDoc) => {
                     if (userDoc.exists()) {
@@ -126,26 +128,25 @@ function handleAuthStateChange(router, closeSidebar) {
                         }
                     }
                 });
-
+                
                 unsubscribeSystemSettings = listenToSystemSettings();
                 
                 // Set default page to dashboard after login if no hash is present
-                if (!window.location.hash || window.location.hash === '#') {
+                if (window.location.hash === '' || window.location.hash === '#') {
                     window.location.hash = '#dashboard';
-                } else {
-                    // Trigger router if already on a page (e.g. after a refresh)
-                    await router();
                 }
+                
+                await router();
 
             } else {
                 await handleLogout();
             }
         } else {
             currentUser = null;
-            await router(); // This will load the login page
+            await router(); 
             setupLoginForm();
         }
     });
 }
 
-export { handleAuthStateChange, currentUser };
+export { handleAuthStateChange, currentUser, roleMap };

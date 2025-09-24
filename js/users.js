@@ -361,7 +361,6 @@ async function initUsersPage() {
         }
     });
     
-    // Initial data load
     const unsubUsers = listenToUsers();
     const unsubLogs = listenToLoginLogs();
 
@@ -369,3 +368,4 @@ async function initUsersPage() {
 }
 
 export { initUsersPage };
+
