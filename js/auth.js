@@ -54,6 +54,7 @@ function handleAuthStateChange(router, closeSidebar) {
             if (userSnap.exists()) {
                 currentUser = { uid: user.uid, ...userSnap.data() };
 
+                // Start session listener for single-device enforcement
                 const localSessionId = localStorage.getItem('loginSessionId');
                 unsubscribeSession = onSnapshot(userRef, (userDoc) => {
                     if (userDoc.exists()) {
@@ -66,11 +67,11 @@ function handleAuthStateChange(router, closeSidebar) {
                     }
                 });
                 
-                if (!document.getElementById('main-view')) {
-                    const response = await fetch('pages/main_layout.html');
-                    appContainer.innerHTML = await response.text();
-                }
+                // 1. Load the main application layout
+                const response = await fetch('pages/main_layout.html');
+                appContainer.innerHTML = await response.text();
 
+                // 2. Setup layout elements
                 document.getElementById('user-display').textContent = `${currentUser.fullName || currentUser.username} (${roleMap[currentUser.role] || currentUser.role})`;
                 document.getElementById('logout-btn').addEventListener('click', handleLogout);
                 
@@ -87,16 +88,24 @@ function handleAuthStateChange(router, closeSidebar) {
                     });
                 });
                 
+                // 3. Start global listeners
                 unsubscribeSystemSettings = listenToSystemSettings();
                 
+                // 4. Start the router to load the initial page content
                 await router();
 
             } else {
                 await handleLogout();
             }
         } else {
+            // User is signed out
             currentUser = null;
-            await router(); 
+            
+            // 1. Load the login page HTML
+            const response = await fetch('pages/login.html');
+            appContainer.innerHTML = await response.text();
+            
+            // 2. Setup the login form's JS
             setupLoginForm();
         }
     });
