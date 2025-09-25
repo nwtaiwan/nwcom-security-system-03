@@ -1,9 +1,0 @@
-body { 
-    font-family: 'Inter', 'Noto Sans TC', sans-serif; 
-}
-
-.sub-tab-button.active {
-    border-color: #dc2626; /* red-600 */
-    color: #dc2626; /* red-600 */
-    background-color: #fee2e2; /* red-100 */
-}
